@@ -1,0 +1,19 @@
+/target
+/bin
+.env
+.kafka_config
+.git
+
+# dependencies
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.dump
+
+orgchart/npm-debug.log*
+orgchart/yarn-debug.log*
+orgchart/yarn-error.log*
