@@ -59,12 +59,28 @@ diesel::table! {
         creator_id -> Uuid,
         authority_id -> Uuid,
         data_object_id -> Uuid,
+        #[max_length = 128]
+        source_nation_classification -> Varchar,
         #[max_length = 3]
         source_nation_code -> Varchar,
         target_nation_codes -> Array<Nullable<Text>>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
         completed_at -> Nullable<Timestamp>,
+    }
+}
+
+diesel::table! {
+    conversion_responses (id) {
+        id -> Uuid,
+        conversion_request_id -> Uuid,
+        subject_data_id -> Uuid,
+        #[max_length = 128]
+        nato_equivalent -> Varchar,
+        target_nation_classifications -> Jsonb,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+        expires_at -> Nullable<Timestamp>,
     }
 }
 
@@ -140,6 +156,8 @@ diesel::joinable!(classification_schemas -> users (creator_id));
 diesel::joinable!(conversion_requests -> authorities (authority_id));
 diesel::joinable!(conversion_requests -> data_objects (data_object_id));
 diesel::joinable!(conversion_requests -> users (creator_id));
+diesel::joinable!(conversion_responses -> conversion_requests (conversion_request_id));
+diesel::joinable!(conversion_responses -> data_objects (subject_data_id));
 diesel::joinable!(data_objects -> users (creator_id));
 diesel::joinable!(metadata -> data_objects (data_object_id));
 diesel::joinable!(nations -> users (creator_id));
@@ -149,6 +167,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     authorities,
     classification_schemas,
     conversion_requests,
+    conversion_responses,
     data_objects,
     metadata,
     nations,

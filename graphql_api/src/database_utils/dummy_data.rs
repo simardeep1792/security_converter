@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::models::{
     Authority, ConversionRequest, DataObject, InsertableConversionRequest, InsertableDataObject,
-    InsertableMetadata, Nation, NewAuthority, NewClassificationSchema, NewDataObject, NewMetadata,
+    InsertableMetadata, Metadata, Nation, NewAuthority, NewClassificationSchema,
     NewNation, User,
 };
 use crate::progress::progress::ProgressLogger;
@@ -541,130 +541,17 @@ pub fn pre_populate_db_schema() -> Result<(), Error> {
         ),
     ];
 
-    // ========== Create DataObjects ==========
-    println!("\n========== Creating DataObjects ==========");
-    let data_object_templates = vec![
-        (
-            "Operation Report",
-            "Detailed operational report for recent military exercise",
-        ),
-        (
-            "Intelligence Assessment",
-            "Strategic intelligence assessment of regional threats",
-        ),
-        (
-            "Classified Briefing",
-            "Executive briefing on classified security matters",
-        ),
-        (
-            "Mission Planning Document",
-            "Comprehensive mission planning and coordination document",
-        ),
-        (
-            "Security Protocol",
-            "Standard operating procedures for classified information handling",
-        ),
-        (
-            "Threat Analysis",
-            "Analysis of emerging security threats and countermeasures",
-        ),
-        (
-            "Equipment Specifications",
-            "Technical specifications for classified military equipment",
-        ),
-        (
-            "Communications Plan",
-            "Secure communications plan for joint operations",
-        ),
-        (
-            "Training Manual",
-            "Classified training manual for specialized personnel",
-        ),
-        (
-            "Strategic Assessment",
-            "Long-term strategic assessment of defense capabilities",
-        ),
-        (
-            "Incident Report",
-            "After-action report for security incident",
-        ),
-        (
-            "Intelligence Summary",
-            "Weekly intelligence summary and threat briefing",
-        ),
-        (
-            "Operational Order",
-            "Classified operational order for coordinated mission",
-        ),
-        (
-            "Capability Analysis",
-            "Analysis of allied capabilities and interoperability",
-        ),
-        (
-            "Security Clearance Review",
-            "Review and assessment of security clearance procedures",
-        ),
-    ];
-
-    let num_data_objects = 30;
-    let mut new_data_objects = Vec::new();
-    let mut new_metadata = Vec::new();
-
-    for i in 0..num_data_objects {
-        let creator = users.choose(&mut rng).unwrap();
-        let template = data_object_templates.choose(&mut rng).unwrap();
-
-        let title = if i % 3 == 0 {
-            format!("{} - {}", template.0, chrono::Utc::now().format("%Y-%m-%d"))
-        } else {
-            format!("{} #{}", template.0, rng.gen_range(1000..9999))
-        };
-
-        let description = format!(
-            "{}. Created for testing and validation purposes.",
-            template.1
-        );
-
-        new_data_objects.push(NewDataObject::new(creator.id, title, description));
-    }
-
-    // Batch insert data objects
-    let inserted_data_objects = diesel::insert_into(data_objects::table)
-        .values(&new_data_objects)
-        .execute(&mut conn)?;
-
-    let data_object_ids = DataObject::get_all()?;
-
-    for elem in data_object_ids.iter() {
-        let domain = metadata_domains.choose(&mut rng).unwrap();
-        let tags = &domain.1;
-        new_metadata.push(NewMetadata::new(
-            elem.id,
-            domain.0.to_string(),
-            tags.choose_multiple(&mut rng, 2)
-                .map(|s| Some(s.to_string()))
-                .collect(),
-        ));
-    }
-
-    // Batch insert metadata
-    let inserted_metadata = diesel::insert_into(metadata::table)
-        .values(&new_metadata)
-        .execute(&mut conn)?;
-
-    let mut progress_data_objects =
-        ProgressLogger::new("Inserting DataObjects".to_owned(), new_data_objects.len());
-
-    progress_data_objects.done();
-    println!("✓ Inserted {} data objects", inserted_data_objects);
+    // Note: Data Objects and Metadata are now created via ConversionRequests
+    // This ensures all data objects originate from actual conversion workflows
 
     // ========== Create Conversion Requests ==========
-    println!("\n========== Creating Conversion Requests ==========");
+    println!("\n========== Creating Conversion Requests (with Data Objects & Metadata) ==========");
 
-    let classification_levels = vec!["UNCLASSIFIED", "RESTRICTED", "CONFIDENTIAL", "SECRET", "TOP SECRET"];
-    let num_conversion_requests = 30;
+    let num_conversion_requests = 1000;
     let mut created_conversion_requests = 0;
+    let mut conversion_errors = 0;
 
+    // Templates for conversion request data objects
     let conversion_titles = vec![
         "Intelligence Report",
         "Tactical Assessment",
@@ -676,6 +563,26 @@ pub fn pre_populate_db_schema() -> Result<(), Error> {
         "Classified Communication",
         "Defense Protocol",
         "Military Exercise Report",
+        "Operational Report",
+        "Intelligence Assessment",
+        "Classified Briefing",
+        "Mission Planning Document",
+        "Security Protocol",
+        "Threat Analysis",
+        "Equipment Specifications",
+        "Communications Plan",
+        "Training Manual",
+        "Strategic Assessment",
+        "Incident Report",
+        "Intelligence Summary",
+        "Operational Order",
+        "Capability Analysis",
+        "Security Clearance Review",
+        "After-Action Report",
+        "Tactical Intelligence Brief",
+        "Joint Operations Plan",
+        "Force Protection Assessment",
+        "Signals Intelligence Report",
     ];
 
     let conversion_domains = vec![
@@ -748,23 +655,56 @@ pub fn pre_populate_db_schema() -> Result<(), Error> {
             tags: selected_tags,
         };
 
-        // Create the conversion request payload
+        // Get the classification schema for the source nation to use correct terminology
+        let source_classification = match crate::models::ClassificationSchema::get_latest_by_nation_code(
+            &source_nation.nation_code
+        ) {
+            Ok(schema) => {
+                // Pick a random classification level from the source nation's schema
+                let classifications = vec![
+                    &schema.to_nato_unclassified,
+                    &schema.to_nato_restricted,
+                    &schema.to_nato_confidential,
+                    &schema.to_nato_secret,
+                    &schema.to_nato_top_secret,
+                ];
+                classifications.choose(&mut rng).unwrap().to_string()
+            }
+            Err(_) => {
+                // Fallback to generic NATO classifications if schema not found
+                eprintln!("Warning: No classification schema found for nation {}. Skipping request.", source_nation.nation_code);
+                continue; // Skip this request
+            }
+        };
+
         let conversion_payload = InsertableConversionRequest {
             user_id: creator.id,
             authority_id: authority.id,
             data_object: insertable_data_object,
             metadata: insertable_metadata,
+            source_nation_classification: source_classification,
             source_nation_code: source_nation.nation_code.clone(),
             target_nation_codes: target_nations,
         };
 
-        // Process the payload to create the conversion request
+        // Process the payload to create the conversion request and then convert it
         match ConversionRequest::process_payload(&conversion_payload) {
-            Ok(_) => {
-                created_conversion_requests += 1;
+            Ok(mut request) => {
+                // Now process the conversion to generate the response
+                match request.process_and_convert() {
+                    Ok(_response) => {
+                        created_conversion_requests += 1;
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to convert request {}: {:?}", i + 1, e);
+                        // Still count the request as created even if conversion fails
+                        created_conversion_requests += 1;
+                    }
+                }
             }
             Err(e) => {
                 eprintln!("Failed to create conversion request {}: {:?}", i + 1, e);
+                conversion_errors += 1;
             }
         }
     }
@@ -772,7 +712,11 @@ pub fn pre_populate_db_schema() -> Result<(), Error> {
     let mut progress_conversion_requests =
         ProgressLogger::new("Inserting Conversion Requests".to_owned(), num_conversion_requests);
     progress_conversion_requests.done();
-    println!("✓ Inserted {} conversion requests", created_conversion_requests);
+    println!("✓ Inserted {} conversion requests ({} errors)", created_conversion_requests, conversion_errors);
+
+    // Count the created data objects and metadata
+    let total_data_objects = DataObject::get_all()?.len();
+    let total_metadata = Metadata::get_all()?.len();
 
     // ========== Summary ==========
     println!("\n========================================");
@@ -781,9 +725,12 @@ pub fn pre_populate_db_schema() -> Result<(), Error> {
     println!("  • {} Nations", inserted_count);
     println!("  • {} Authorities", inserted_authorities);
     println!("  • {} Classification Schemas", inserted_schemas);
-    println!("  • {} Metadata domains", inserted_metadata);
-    println!("  • {} DataObjects", inserted_data_objects);
     println!("  • {} Conversion Requests", created_conversion_requests);
+    println!("  • {} DataObjects (created via requests)", total_data_objects);
+    println!("  • {} Metadata records (created via requests)", total_metadata);
+    if conversion_errors > 0 {
+        println!("  ⚠ {} conversion errors", conversion_errors);
+    }
     println!("========================================\n");
 
     Ok(())

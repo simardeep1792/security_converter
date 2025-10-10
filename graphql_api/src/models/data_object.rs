@@ -7,7 +7,7 @@ use diesel::{QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::models::{Metadata, User};
+use crate::models::{Metadata, User, ConversionRequest, ConversionResponse};
 use crate::{database, schema::*};
 
 #[derive(
@@ -34,6 +34,16 @@ impl DataObject {
     pub async fn metadata(&self) -> Result<Metadata> {
         Metadata::get_by_data_object_id(&self.id)
     }
+
+    pub async fn conversion_request(&self) -> Result<ConversionRequest> {
+        ConversionRequest::get_by_data_object_id(&self.id)
+    }
+
+    pub async fn conversion_response(&self) -> Result<ConversionResponse> {
+        ConversionResponse::get_by_data_object_id(&self.id)
+    }
+
+
 }
 
 // Non Graphql
@@ -150,7 +160,8 @@ impl NewDataObject {
 
 /// A lightweight struct to accept JSON formatted data from a ConversionRequest
 /// needed to create a NewDataObject
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, InputObject)]
+#[graphql(name = "DataObjectInput")]
 pub struct InsertableDataObject {
     pub title: String,
     pub description: String,

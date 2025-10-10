@@ -14,7 +14,8 @@ use crate::database::connection;
 
 use crate::{database, schema::*};
 
-use crate::models::{Authority, DataObject, InsertableDataObject, InsertableMetadata, Metadata, NewDataObject, NewMetadata, User};
+use crate::models::{Authority, ClassificationSchema, ConversionResponse, DataObject, InsertableConversionResponse, InsertableDataObject, InsertableMetadata, Metadata, NewDataObject, NewMetadata, User};
+use std::collections::HashMap;
 
 #[derive(
     Debug,
@@ -42,6 +43,7 @@ pub struct ConversionRequest {
     pub creator_id: Uuid, // User
     pub authority_id: Uuid, // Authority requesting conversion
     pub data_object_id: Uuid,     // DataObject
+    pub source_nation_classification: String,
     pub source_nation_code: String,
     pub target_nation_codes: Vec<Option<String>>, // At least one required, validated at creation
     //pub context_group: Option<String>, // Used for sending only to certain groups, missions or lists.
@@ -52,12 +54,14 @@ pub struct ConversionRequest {
 
 /// The JSON formatted data payload submitted to the API that triggers
 /// a security classification conversion
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, InputObject)]
+#[graphql(name = "ConversionRequestInput")]
 pub struct InsertableConversionRequest {
     pub user_id: Uuid,
     pub authority_id: Uuid,
     pub data_object: InsertableDataObject,
     pub metadata: InsertableMetadata,
+    pub source_nation_classification: String,
     pub source_nation_code: String,
     pub target_nation_codes: Vec<String>,
 }
@@ -83,6 +87,10 @@ impl ConversionRequest {
     /// Get the metadata for the data object
     pub async fn metadata(&self) -> Result<Metadata> {
         Metadata::get_by_data_object_id(&self.data_object_id)
+    }
+
+    pub async fn conversion_response(&self) -> Result<ConversionResponse> {
+        ConversionResponse::get_by_conversion_request_id(&self.id)
     }
 
     /// Check if this conversion request has been completed
@@ -125,6 +133,7 @@ impl ConversionRequest {
             creator_id: payload.user_id,
             authority_id: payload.authority_id,
             data_object_id: data_object.id,
+            source_nation_classification: payload.source_nation_classification.clone(),
             source_nation_code: payload.source_nation_code.clone(),
             target_nation_codes: payload.target_nation_codes.clone(),
         };
@@ -186,12 +195,12 @@ impl ConversionRequest {
         Ok(res)
     }
 
-    /// Get all conversion requests by data object ID
-    pub fn get_by_data_object_id(data_object_id: &Uuid) -> Result<Vec<Self>> {
+    /// Get conversion request by data object ID
+    pub fn get_by_data_object_id(data_object_id: &Uuid) -> Result<Self> {
         let mut conn = connection()?;
         let res = conversion_requests::table
             .filter(conversion_requests::data_object_id.eq(data_object_id))
-            .load::<ConversionRequest>(&mut conn)?;
+            .first(&mut conn)?;
         Ok(res)
     }
 
@@ -246,6 +255,141 @@ impl ConversionRequest {
             .execute(&mut conn)?;
         Ok(res)
     }
+
+    /// Process this conversion request and generate a ConversionResponse
+    ///
+    /// This performs the complete two-step conversion:
+    /// 1. Source Nation Classification → NATO Standard
+    /// 2. NATO Standard → Target Nation Classifications
+    ///
+    /// # Returns
+    /// A `ConversionResponse` containing the NATO equivalent and all target nation classifications
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// - Source or target nation schemas are not found
+    /// - Classification schemas have expired
+    /// - Classification levels are invalid
+    pub fn process_and_convert(&mut self) -> Result<ConversionResponse> {
+        // Step 1: Get the source nation's classification schema
+        let source_schema = ClassificationSchema::get_latest_by_nation_code(&self.source_nation_code)?;
+
+        // Verify the schema is still valid
+        if !source_schema.is_valid() {
+            return Err(Error::new(format!(
+                "Classification schema for nation {} has expired",
+                self.source_nation_code
+            )));
+        }
+
+        // Step 2: Convert source classification to NATO equivalent
+        let nato_equivalent = source_schema.to_nato(&self.source_nation_classification)?;
+
+        // Step 3: Convert NATO to each target nation classification
+        let mut target_classifications = HashMap::new();
+
+        // Filter out None values from target_nation_codes
+        let target_codes: Vec<String> = self.target_nation_codes
+            .iter()
+            .filter_map(|c| c.clone())
+            .collect();
+
+        for target_code in target_codes {
+            let target_schema = ClassificationSchema::get_latest_by_nation_code(&target_code)?;
+
+            // Verify target schema is valid
+            if !target_schema.is_valid() {
+                return Err(Error::new(format!(
+                    "Classification schema for target nation {} has expired",
+                    target_code
+                )));
+            }
+
+            let target_classification = target_schema.from_nato(&nato_equivalent)?;
+            target_classifications.insert(target_code, target_classification);
+        }
+
+        // Step 4: Create the ConversionResponse
+        let response_payload = InsertableConversionResponse {
+            conversion_request_id: self.id,
+            subject_data_id: self.data_object_id,
+            nato_equivalent,
+            target_nation_classifications: target_classifications,
+        };
+
+        let response = ConversionResponse::create(&response_payload);
+
+        // Step 5: Update the Request to complete
+        &self.mark_completed();
+
+        response
+    }
+}
+
+/// Standalone function to convert classifications between nations using NATO as the intermediary
+///
+/// This is the core conversion logic that implements the "Rosetta Stone" pattern:
+/// Source Nation → NATO Standard → Target Nation(s)
+///
+/// # Arguments
+/// * `source_nation_code` - The ISO 3166-1 alpha-3 code of the source nation (e.g., "USA", "GBR")
+/// * `source_classification` - The classification level in the source nation's terminology
+/// * `target_nation_codes` - Vector of target nation codes to convert to
+///
+/// # Returns
+/// * `nato_equivalent` - The NATO classification level
+/// * `target_classifications` - HashMap mapping nation codes to their equivalent classifications
+///
+/// # Example
+/// ```
+/// let (nato, targets) = convert_classification(
+///     "USA",
+///     "SECRET",
+///     vec!["GBR".to_string(), "FRA".to_string()]
+/// )?;
+/// // nato == "NATO SECRET"
+/// // targets == {"GBR": "SECRET", "FRA": "SECRET DÉFENSE"}
+/// ```
+pub fn convert_classification(
+    source_nation_code: &str,
+    source_classification: &str,
+    target_nation_codes: Vec<String>,
+) -> Result<(String, HashMap<String, String>)> {
+    // Step 1: Get source nation's classification schema
+    let source_schema = ClassificationSchema::get_latest_by_nation_code(
+        &source_nation_code.to_string()
+    )?;
+
+    // Verify the schema is still valid
+    if !source_schema.is_valid() {
+        return Err(Error::new(format!(
+            "Classification schema for nation {} has expired",
+            source_nation_code
+        )));
+    }
+
+    // Step 2: Convert source classification to NATO equivalent
+    let nato_equivalent = source_schema.to_nato(source_classification)?;
+
+    // Step 3: Convert NATO to each target nation classification
+    let mut target_classifications = HashMap::new();
+
+    for target_code in target_nation_codes {
+        let target_schema = ClassificationSchema::get_latest_by_nation_code(&target_code)?;
+
+        // Verify target schema is valid
+        if !target_schema.is_valid() {
+            return Err(Error::new(format!(
+                "Classification schema for target nation {} has expired",
+                target_code
+            )));
+        }
+
+        let target_classification = target_schema.from_nato(&nato_equivalent)?;
+        target_classifications.insert(target_code, target_classification);
+    }
+
+    Ok((nato_equivalent, target_classifications))
 }
 
 /// Internal struct for inserting conversion requests into the database
@@ -256,6 +400,7 @@ struct NewConversionRequest {
     pub creator_id: Uuid,
     pub authority_id: Uuid,
     pub data_object_id: Uuid,
+    pub source_nation_classification: String,
     pub source_nation_code: String,
     pub target_nation_codes: Vec<String>,
 }

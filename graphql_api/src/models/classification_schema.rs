@@ -110,6 +110,24 @@ impl ClassificationSchema {
         Ok(res)
     }
 
+    pub fn get_by_nation_codes(code_options: &Vec<Option<String>>) -> Result<Vec<Self>> {
+        let mut conn = database::connection()?;
+
+        let mut codes = Vec::new();
+
+        for op in code_options.iter() {
+            match op {
+                Some(s) => { codes.push(s )},
+                None => (),
+            }
+        };
+
+        let res = classification_schemas::table
+            .filter(classification_schemas::nation_code.eq_any(codes))
+            .load::<ClassificationSchema>(&mut conn)?;
+        Ok(res)
+    }
+
     pub fn get_by_creator_id(creator_id: Uuid) -> Result<Vec<Self>> {
         let mut conn = database::connection()?;
         let res = classification_schemas::table
@@ -171,6 +189,99 @@ impl ClassificationSchema {
             .get_result(&mut conn)?;
 
         Ok(res)
+    }
+
+    /// Convert a source nation's classification to its NATO equivalent
+    ///
+    /// This performs the first step of the two-step conversion process:
+    /// Source Nation Classification → NATO Standard
+    ///
+    /// # Arguments
+    /// * `source_classification` - The classification level in the source nation's terminology
+    ///
+    /// # Returns
+    /// The NATO equivalent classification level as a string
+    ///
+    /// # Example
+    /// ```
+    /// let schema = ClassificationSchema::get_latest_by_nation_code(&"USA".to_string())?;
+    /// let nato_level = schema.to_nato("CONFIDENTIAL")?;
+    /// // nato_level == "NATO CONFIDENTIAL"
+    /// ```
+    pub fn to_nato(&self, source_classification: &str) -> Result<String> {
+        let source_upper = source_classification.trim().to_uppercase();
+
+        // Match against the schema's mappings (case-insensitive)
+        let nato_level = if source_upper == self.to_nato_unclassified.to_uppercase() {
+            "NATO UNCLASSIFIED"
+        } else if source_upper == self.to_nato_restricted.to_uppercase() {
+            "NATO RESTRICTED"
+        } else if source_upper == self.to_nato_confidential.to_uppercase() {
+            "NATO CONFIDENTIAL"
+        } else if source_upper == self.to_nato_secret.to_uppercase() {
+            "NATO SECRET"
+        } else if source_upper == self.to_nato_top_secret.to_uppercase() {
+            "COSMIC TOP SECRET"
+        } else {
+            return Err(Error::new(format!(
+                "Unknown classification '{}' for nation code {}. Valid classifications: {}, {}, {}, {}, {}",
+                source_classification,
+                self.nation_code,
+                self.to_nato_unclassified,
+                self.to_nato_restricted,
+                self.to_nato_confidential,
+                self.to_nato_secret,
+                self.to_nato_top_secret
+            )));
+        };
+
+        Ok(nato_level.to_string())
+    }
+
+    /// Convert a NATO classification to this nation's equivalent
+    ///
+    /// This performs the second step of the two-step conversion process:
+    /// NATO Standard → Target Nation Classification
+    ///
+    /// # Arguments
+    /// * `nato_classification` - The NATO classification level
+    ///
+    /// # Returns
+    /// The equivalent classification in this nation's terminology
+    ///
+    /// # Example
+    /// ```
+    /// let schema = ClassificationSchema::get_latest_by_nation_code(&"GBR".to_string())?;
+    /// let uk_level = schema.from_nato("NATO CONFIDENTIAL")?;
+    /// // uk_level == "CONFIDENTIAL"
+    /// ```
+    pub fn from_nato(&self, nato_classification: &str) -> Result<String> {
+        let nato_upper = nato_classification.trim().to_uppercase();
+
+        let national_classification = match nato_upper.as_str() {
+            "NATO UNCLASSIFIED" | "UNCLASSIFIED" => &self.from_nato_unclassified,
+            "NATO RESTRICTED" | "RESTRICTED" => &self.from_nato_restricted,
+            "NATO CONFIDENTIAL" | "CONFIDENTIAL" => &self.from_nato_confidential,
+            "NATO SECRET" | "SECRET" => &self.from_nato_secret,
+            "COSMIC TOP SECRET" | "TOP SECRET" | "NATO TOP SECRET" => &self.from_nato_top_secret,
+            _ => {
+                return Err(Error::new(format!(
+                    "Unknown NATO classification '{}'. Valid NATO levels: NATO UNCLASSIFIED, NATO RESTRICTED, NATO CONFIDENTIAL, NATO SECRET, COSMIC TOP SECRET",
+                    nato_classification
+                )));
+            }
+        };
+
+        Ok(national_classification.clone())
+    }
+
+    /// Check if this schema is still valid (not expired)
+    pub fn is_valid(&self) -> bool {
+        if let Some(expires_at) = self.expires_at {
+            expires_at > Utc::now().naive_utc()
+        } else {
+            true // No expiration means always valid
+        }
     }
 }
 

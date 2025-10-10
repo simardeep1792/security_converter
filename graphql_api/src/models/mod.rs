@@ -10,6 +10,7 @@ mod data_object;
 mod metadata;
 mod nation;
 mod conversion_request;
+mod conversion_response;
 
 pub use self::access_log::*;
 pub use self::user::*;
@@ -23,3 +24,4 @@ pub use data_object::*;
 pub use metadata::*;
 pub use nation::*;
 pub use conversion_request::*;
+pub use conversion_response::*;

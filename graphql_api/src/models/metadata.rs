@@ -1,15 +1,22 @@
 use std::fmt::Debug;
-use std::fs::metadata;
+use std::collections::HashMap;
 
 use async_graphql::*;
 use chrono::prelude::*;
-use diesel::{self, ExpressionMethods, Insertable, PgTextExpressionMethods, Queryable};
+use diesel::{self, ExpressionMethods, Insertable, Queryable};
 use diesel::{QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::models::DataObject;
 use crate::{database, schema::*};
+
+/// Represents the count of metadata records for a specific domain
+#[derive(Debug, Clone, Deserialize, Serialize, SimpleObject)]
+pub struct DomainCount {
+    pub domain: String,
+    pub count: i64,
+}
 
 #[derive(
     Debug, Clone, Deserialize, Serialize, Queryable, Insertable, AsChangeset, SimpleObject,
@@ -104,6 +111,24 @@ impl Metadata {
         Ok(res)
     }
 
+    pub fn get_counts_by_domain() -> Result<Vec<DomainCount>> {
+        let mut conn = database::connection()?;
+        let all_metadata = metadata::table.load::<Metadata>(&mut conn)?;
+
+        let mut domain_counts: HashMap<String, i64> = HashMap::new();
+
+        for metadata in all_metadata {
+            *domain_counts.entry(metadata.domain.clone()).or_insert(0) += 1;
+        }
+
+        let result: Vec<DomainCount> = domain_counts
+            .into_iter()
+            .map(|(domain, count)| DomainCount { domain, count })
+            .collect();
+
+        Ok(result)
+    }
+
     pub fn update(&self) -> Result<Self> {
         let mut conn = database::connection()?;
 
@@ -136,7 +161,8 @@ impl NewMetadata {
 
 /// A light struct to accept the JSON formatted Metadata included with
 /// a ConversionRequest
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, InputObject)]
+#[graphql(name = "MetadataInput")]
 pub struct InsertableMetadata {
     pub domain: String,
     pub tags: Vec<Option<String>>,

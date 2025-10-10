@@ -44,11 +44,11 @@ impl ConversionRequestQuery {
     }
 
     /// Returns conversion requests by data object ID
-    pub async fn conversion_requests_by_data_object_id(
+    pub async fn conversion_request_by_data_object_id(
         &self,
         _context: &Context<'_>,
         data_object_id: Uuid,
-    ) -> Result<Vec<ConversionRequest>> {
+    ) -> Result<ConversionRequest> {
         ConversionRequest::get_by_data_object_id(&data_object_id)
     }
 

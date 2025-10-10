@@ -1,15 +1,4 @@
-pub struct Request {
-    pub id: Uuid,
-    pub creator_id: Uuid,     // User
-    pub data_object_id: Uuid, // DataObject
-    pub source_nation_code: NationCode,
-    pub target_nation_codes: Vec<NationCode>,
-    pub national_classification: String,
-    //pub context_group: Option<String>, // Used for sending only to certain groups, missions or lists.
-    pub created_at: NaiveDate,
-    pub updated_at: NaiveDate,
-    pub completed_at: NaiveDate,
-}
+
 
 // Model for sharing to a mission or coalition group - this can come later
 pub struct ContextGroup {
@@ -27,11 +16,11 @@ pub struct ContextGroup {
 // A mapper struct with methods to run the API functionality
 // A Request to the API will trigger the creation of a mapper that finds the correct ClassificationSchema, 
 // identifies and authenticates an authority and, if validated, ingests the DataObject and Metadata and returns a ConversionResponse
-pub struct ClassificationMapper {
+pub struct ConversionMapper {
     pub schema: ClassificationSchema,
 }
 
-pub struct ClassificationResponse {
+pub struct ConversionResponse {
     pub id: Uuid,
     pub subject_data_id: Uuid, // SubjectData
     pub nato_equivalent: NatoClassification,

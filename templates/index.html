@@ -1,205 +1,536 @@
 {% extends "base.html" %}
 
 {% block title %}
-    <title>API Documentation</title>
+    <title>NATO Classification Conversion API - Documentation</title>
 {% endblock title %}
 
 {% block content %}
     <col class="col m-md-2 m-1">
-        <h1>API Documentation</h1>
-        <h2>[UNDER CONSTRUCTION]</h2>
-            <p>This is a placeholder page for complete API documentation.</p>
-
-            <h2>GraphQL API</h2>
-            <ul>
-                <li><a href="/playground">Link to GraphQL Playground</a> -> Explore the API and see documentation and the schema </li>
-                <li><a href="/graphql">Link to GraphQL Endpoint</a> -> For production use of the API</li>
-                <li><a href="/org_chart">Link to Org Chart demo</a> -> To showcase potential from populated API</li>
-                <li><a href="/static/build/index.html">Link to connected Org Chart demo</a> -> To showcase API</li>
-            </ul>
-
-        <h2>Simple Queries</h2>
-        <h3>Query People</h3>
-        <pre>
-            <code>
-              query {
-                allPeople {
-                  email
-                  workAddress
-                }
-              }
-            </code>
-        </pre>
-        <h3>Query Travellers</h3>
-        <pre>
-            <code>
-                query {
-                    getPeople(count:12) {
-                      birthDate
-                      publicHealthProfile {
-                        id
-                        vaccinationHistory {
-                          vaccine{
-                            vaccineType
-                            name
-                          }
-                          providedOn
-                          locationProvided {
-                            name
-                            country {
-                              countryName
-                            }
-                          }
-                        }
-                      }
-                    }
-                }
-            </code>
-        </pre>
-
-        <h3>Query Trips</h3>
-        <pre>
-            <code>
-                query {
-                    getTrips(count:12) {
-                      id
-                      travelMode
-                      scheduledDepartureTime
-                      departureTime
-                      scheduledArrivalTime
-                      arrivalTime
-                      scheduledArrivalTime
-                      travelIntent
-                      tripState
-                      tripProvider
-                      origin {
-                        name
-                        country {
-                          countryName
-                        }
-                      }
-                      destination {
-                        name
-                        country {
-                          countryName
-                        }
-                      }
-                      
-                      person {
-                        approvedAccessLevel
-                        birthDate
-                        travelDocumentIssuer {
-                          countryName
-                        }
-                        publicHealthProfile {
-                          testingHistory {
-                            dateTaken
-                            testName
-                            testType
-                            testResult
-                            dateTaken
-                          }
-                          quarantinePlans {
-                            active
-                            dateCreated
-                            quarantineRequired
-                            confirmationNoVulnerable
-                          }
-                          vaccinationHistory {
-                            vaccine {
-                              name
-                              approved
-                              requiredDoses
-                            }
-                            providedOn
-                            locationProvided {
-                              name
-                              country {
-                                countryName
-                              }
-                            }
-                          }
-                        } 
-                      }
-                    }
-                  }
-            </code>
-        </pre>
-
-        <h3>Query Vaccinations</h3>
-        <pre>
-            <code>
-                query vaccinations {
-                    getVaccinations(count:12) {
-                      providedOn
-                      locationProvided {
-                        name
-                        country {
-                          countryName
-                        }
-                      }
-                      vaccine {
-                        name
-                        manufacturer
-                        requiredDoses
-                        approved
-                        details
-                      }
-                    }
-                }
-            </code>
-        </pre>
-
-        <h3>Query COVID tests</h3>
-        <pre>
-            <code>
-                query testResults {
-                    getCovidTestResults(count:12) {
-                      testName
-                      testType
-                      testResult
-                      dateTaken
-                    }
-                }
-            </code>
-        </pre>
-
-        <h2>Complex Queries</h2>
-
-        <h3>Signing in as Operator</h3>
-        <h4>Query</h4>
-        <pre>
-            <code>
-                mutation SignIn($auth_data: LoginQuery!) {
-                    signIn(input: $auth_data)
-                }
-            </code>
-        </pre>
-        <h4>Query Variables</h4>
-        <pre>
-            <code>
-                {"auth_data": {
-                    "email":"test_user@email.com",
-                    "password":"TestPassword"
-                }}
-            </code>
-        </pre>
-        <h4>To Do:</h4>
-        <p>Enter the query and variables in the Playground and click the "play" button.
-            Then copy the string inside the quotation marks that is returned. This is a 
-            Javascript Web Token.
+        <h1>NATO Classification Conversion API</h1>
+        <p class="lead">
+            A GraphQL API middleware for converting security classifications between NATO nations
+            using the NATO standard as a "Rosetta Stone".
         </p>
 
-        <h3>Add the Token to the HTTP Headers section by replacing $JWT below</h3>
-        <pre>
-            <code>
-                {
-                    "Authorization": "Bearer $JWT"
-                }
-            </code>
-        </pre>
+        <h2>Quick Links</h2>
+        <ul>
+            <li><a href="/graphql"><strong>GraphQL Endpoint</strong></a> - Production API endpoint</li>
+            <li><a href="/playground"><strong>GraphQL Playground</strong></a> - Interactive API explorer with schema documentation</li>
+        </ul>
 
-        <p>More to come...</p>
-        
+        <hr/>
+
+        <h2>Table of Contents</h2>
+        <ol>
+            <li><a href="#overview">System Overview</a></li>
+            <li><a href="#authentication">Authentication</a></li>
+            <li><a href="#queries">Queries</a></li>
+            <li><a href="#mutations">Mutations</a></li>
+            <li><a href="#examples">Complete Examples</a></li>
+        </ol>
+
+        <hr/>
+
+        <h2 id="overview">1. System Overview</h2>
+        <p>
+            This API provides security classification conversion services for NATO member nations.
+            It uses a two-step conversion process:
+        </p>
+        <pre><code>Source Nation Classification → NATO Standard → Target Nation Classification(s)</code></pre>
+
+        <h3>Key Concepts</h3>
+        <dl>
+            <dt><strong>ConversionRequest</strong></dt>
+            <dd>A request to convert a classified document from one nation's terminology to another's</dd>
+
+            <dt><strong>ConversionResponse</strong></dt>
+            <dd>The result containing NATO equivalent and target nation classifications</dd>
+
+            <dt><strong>ClassificationSchema</strong></dt>
+            <dd>Mapping between a nation's classification levels and NATO standards</dd>
+
+            <dt><strong>Authority</strong></dt>
+            <dd>A validated organization authorized to request conversions</dd>
+        </dl>
+
+        <hr/>
+
+        <h2 id="authentication">2. Authentication</h2>
+
+        <h3>Step 1: Sign In</h3>
+        <p>Obtain a JWT token by signing in with your credentials:</p>
+        <pre><code>mutation SignIn {
+  signIn(input: {
+    email: "user@nato.int"
+    password: "your_password"
+  }) {
+    bearer
+    email
+    role
+  }
+}</code></pre>
+
+        <h3>Step 2: Add Token to Headers</h3>
+        <p>Include the bearer token in all subsequent requests:</p>
+        <pre><code>{
+  "Authorization": "Bearer YOUR_JWT_TOKEN_HERE"
+}</code></pre>
+
+        <hr/>
+
+        <h2 id="queries">3. Queries</h2>
+
+        <h3>3.1 Query Conversion Requests</h3>
+        <h4>Get All Conversion Requests</h4>
+        <pre><code>query {
+  conversionRequests {
+    id
+    sourceNationCode
+    sourceNationClassification
+    targetNationCodes
+    createdAt
+    completedAt
+    creator {
+      name
+      email
+    }
+  }
+}</code></pre>
+
+        <h4>Get Request by ID</h4>
+        <pre><code>query {
+  conversionRequestById(id: "uuid-here") {
+    id
+    sourceNationCode
+    sourceNationClassification
+    targetNationCodes
+    dataObject {
+      title
+      description
+    }
+    metadata {
+      domain
+      tags
+    }
+  }
+}</code></pre>
+
+        <h4>Get Pending Requests</h4>
+        <pre><code>query {
+  conversionRequestsPending {
+    id
+    sourceNationCode
+    createdAt
+  }
+}</code></pre>
+
+        <h3>3.2 Query Conversion Responses</h3>
+        <h4>Get All Responses</h4>
+        <pre><code>query {
+  conversionResponses {
+    id
+    natoEquivalent
+    targetNationClassifications
+    createdAt
+    expiresAt
+  }
+}</code></pre>
+
+        <h4>Get Response by Request ID</h4>
+        <pre><code>query {
+  conversionResponsesByRequestId(requestId: "uuid-here") {
+    id
+    natoEquivalent
+    targetNationClassifications
+    subjectData {
+      title
+    }
+  }
+}</code></pre>
+
+        <h4>Get Active (Non-Expired) Responses</h4>
+        <pre><code>query {
+  conversionResponsesActive {
+    id
+    natoEquivalent
+    expiresAt
+  }
+}</code></pre>
+
+        <h3>3.3 Query Classification Schemas</h3>
+        <h4>Get Schema by Nation Code</h4>
+        <pre><code>query {
+  classificationSchemasByNationCode(nationCode: "USA") {
+    id
+    nationCode
+    toNatoUnclassified
+    toNatoRestricted
+    toNatoConfidential
+    toNatoSecret
+    toNatoTopSecret
+    version
+  }
+}</code></pre>
+
+        <h3>3.4 Query Nations</h3>
+        <pre><code>query {
+  nations {
+    id
+    nationCode
+    nationName
+  }
+}</code></pre>
+
+        <h3>3.5 Query Authorities</h3>
+        <pre><code>query {
+  authorities {
+    id
+    name
+    email
+    nation {
+      nationCode
+      nationName
+    }
+  }
+}</code></pre>
+
+        <hr/>
+
+        <h2 id="mutations">4. Mutations</h2>
+
+        <h3>4.1 Submit Conversion Request (Main Operation)</h3>
+        <p>Submit a document for classification conversion. This automatically processes the conversion.</p>
+        <pre><code>mutation SubmitConversion {
+  submitConversionRequest(conversionData: {
+    userId: "your-user-uuid"
+    authorityId: "your-authority-uuid"
+    dataObject: {
+      title: "Intelligence Report #2024-001"
+      description: "Strategic intelligence assessment"
+    }
+    metadata: {
+      domain: "INTEL"
+      tags: ["urgent", "classified", "strategic"]
+    }
+    sourceNationClassification: "SECRET"
+    sourceNationCode: "USA"
+    targetNationCodes: ["GBR", "FRA", "DEU"]
+  }) {
+    request {
+      id
+      createdAt
+    }
+    response {
+      id
+      natoEquivalent
+      targetNationClassifications
+    }
+    success
+    message
+  }
+}</code></pre>
+
+        <h3>4.2 Create Request Without Processing</h3>
+        <p>Create a conversion request for later/batch processing:</p>
+        <pre><code>mutation CreateRequest {
+  createConversionRequest(conversionData: {
+    userId: "your-user-uuid"
+    authorityId: "your-authority-uuid"
+    dataObject: {
+      title: "Operational Brief"
+      description: "Mission planning document"
+    }
+    metadata: {
+      domain: "OPERATIONS"
+      tags: ["planning"]
+    }
+    sourceNationClassification: "CONFIDENTIAL"
+    sourceNationCode: "GBR"
+    targetNationCodes: ["USA", "CAN"]
+  }) {
+    id
+    sourceNationCode
+    createdAt
+  }
+}</code></pre>
+
+        <h3>4.3 Process Existing Request (Admin Only)</h3>
+        <pre><code>mutation ProcessRequest {
+  processConversionRequest(requestId: "uuid-here") {
+    id
+    natoEquivalent
+    targetNationClassifications
+  }
+}</code></pre>
+
+        <h3>4.4 Mark Request as Completed (Admin Only)</h3>
+        <pre><code>mutation MarkCompleted {
+  markConversionRequestCompleted(requestId: "uuid-here") {
+    id
+    completedAt
+  }
+}</code></pre>
+
+        <h3>4.5 Delete Request (Admin Only)</h3>
+        <pre><code>mutation DeleteRequest {
+  deleteConversionRequest(requestId: "uuid-here")
+}</code></pre>
+
+        <hr/>
+
+        <h2 id="examples">5. Complete Examples</h2>
+
+        <h3>Example 1: Complete Conversion Workflow</h3>
+        <p><strong>Scenario:</strong> US agency converting SECRET document for UK and France</p>
+
+        <h4>Step 1: Sign In</h4>
+        <pre><code>mutation {
+  signIn(input: {
+    email: "analyst@dia.gov"
+    password: "SecurePassword123"
+  }) {
+    bearer
+    role
+  }
+}</code></pre>
+
+        <h4>Step 2: Submit Conversion (with variables)</h4>
+        <p><strong>Query:</strong></p>
+        <pre><code>mutation SubmitConversion($input: ConversionRequestInput!) {
+  submitConversionRequest(conversionData: $input) {
+    request {
+      id
+      sourceNationCode
+      targetNationCodes
+    }
+    response {
+      natoEquivalent
+      targetNationClassifications
+    }
+    success
+    message
+  }
+}</code></pre>
+
+        <p><strong>Variables:</strong></p>
+        <pre><code>{
+  "input": {
+    "userId": "123e4567-e89b-12d3-a456-426614174000",
+    "authorityId": "987e6543-e21b-12d3-a456-426614174000",
+    "dataObject": {
+      "title": "Intelligence Assessment: Eastern Europe",
+      "description": "Comprehensive intelligence report on regional threats"
+    },
+    "metadata": {
+      "domain": "INTEL",
+      "tags": ["regional", "threat-assessment", "strategic"]
+    },
+    "sourceNationClassification": "SECRET",
+    "sourceNationCode": "USA",
+    "targetNationCodes": ["GBR", "FRA"]
+  }
+}</code></pre>
+
+        <p><strong>Expected Response:</strong></p>
+        <pre><code>{
+  "data": {
+    "submitConversionRequest": {
+      "request": {
+        "id": "abc123...",
+        "sourceNationCode": "USA",
+        "targetNationCodes": ["GBR", "FRA"]
+      },
+      "response": {
+        "natoEquivalent": "NATO SECRET",
+        "targetNationClassifications": {
+          "GBR": "SECRET",
+          "FRA": "SECRET DÉFENSE"
+        }
+      },
+      "success": true,
+      "message": "Conversion request submitted and processed successfully"
+    }
+  }
+}</code></pre>
+
+        <h3>Example 2: Query Request History</h3>
+        <pre><code>query RequestHistory {
+  conversionRequestsByCreatorId(
+    creatorId: "123e4567-e89b-12d3-a456-426614174000"
+  ) {
+    id
+    sourceNationCode
+    sourceNationClassification
+    targetNationCodes
+    createdAt
+    isCompleted
+    dataObject {
+      title
+    }
+  }
+}</code></pre>
+
+        <h3>Example 3: Check Classification Schema</h3>
+        <p>Before submitting, verify the correct classification terms for your nation:</p>
+        <pre><code>query {
+  classificationSchemasByNationCode(nationCode: "POL") {
+    nationCode
+    toNatoUnclassified
+    toNatoRestricted
+    toNatoConfidential
+    toNatoSecret
+    toNatoTopSecret
+  }
+}</code></pre>
+
+        <p><strong>Response shows Poland's terminology:</strong></p>
+        <pre><code>{
+  "data": {
+    "classificationSchemasByNationCode": [{
+      "nationCode": "POL",
+      "toNatoUnclassified": "Jawne",
+      "toNatoRestricted": "Zastrzeżone",
+      "toNatoConfidential": "Poufne",
+      "toNatoSecret": "Tajne",
+      "toNatoTopSecret": "Ściśle Tajne"
+    }]
+  }
+}</code></pre>
+
+        <hr/>
+
+        <h2>Classification Levels Reference</h2>
+        <h3>NATO Standard Levels</h3>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Level</th>
+                    <th>NATO Term</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td>NATO UNCLASSIFIED</td>
+                    <td>Information that does not require protection</td>
+                </tr>
+                <tr>
+                    <td>2</td>
+                    <td>NATO RESTRICTED</td>
+                    <td>Lowest level of classified information</td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>NATO CONFIDENTIAL</td>
+                    <td>Unauthorized disclosure could be damaging</td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>NATO SECRET</td>
+                    <td>Unauthorized disclosure could be seriously damaging</td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>COSMIC TOP SECRET</td>
+                    <td>Highest level; exceptionally grave damage if disclosed</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Example National Equivalents</h3>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Nation</th>
+                    <th>Unclassified</th>
+                    <th>Restricted</th>
+                    <th>Confidential</th>
+                    <th>Secret</th>
+                    <th>Top Secret</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>🇺🇸 USA</td>
+                    <td>UNCLASSIFIED</td>
+                    <td>RESTRICTED</td>
+                    <td>CONFIDENTIAL</td>
+                    <td>SECRET</td>
+                    <td>TOP SECRET</td>
+                </tr>
+                <tr>
+                    <td>🇬🇧 GBR</td>
+                    <td>OFFICIAL</td>
+                    <td>OFFICIAL-SENSITIVE</td>
+                    <td>SECRET</td>
+                    <td>SECRET</td>
+                    <td>TOP SECRET</td>
+                </tr>
+                <tr>
+                    <td>🇫🇷 FRA</td>
+                    <td>Non Protégé</td>
+                    <td>Diffusion Restreinte</td>
+                    <td>Confidentiel Défense</td>
+                    <td>Secret Défense</td>
+                    <td>Très Secret Défense</td>
+                </tr>
+                <tr>
+                    <td>🇵🇱 POL</td>
+                    <td>Jawne</td>
+                    <td>Zastrzeżone</td>
+                    <td>Poufne</td>
+                    <td>Tajne</td>
+                    <td>Ściśle Tajne</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr/>
+
+        <h2>API Best Practices</h2>
+        <ul>
+            <li><strong>Always authenticate</strong> - Include your JWT token in the Authorization header</li>
+            <li><strong>Use correct terminology</strong> - Check the ClassificationSchema for your nation's specific terms</li>
+            <li><strong>Provide complete metadata</strong> - Include domain and relevant tags for better organization</li>
+            <li><strong>Check schema expiration</strong> - Classification schemas may expire and be updated</li>
+            <li><strong>Handle errors gracefully</strong> - The API returns descriptive error messages</li>
+            <li><strong>Batch operations</strong> - Use createConversionRequest for multiple requests, then process in batch</li>
+        </ul>
+
+        <hr/>
+
+        <h2>Error Handling</h2>
+        <p>Common errors and solutions:</p>
+        <dl>
+            <dt>"User not authenticated"</dt>
+            <dd>Solution: Ensure you've included the JWT token in the Authorization header</dd>
+
+            <dt>"Unknown classification 'X' for nation Y"</dt>
+            <dd>Solution: Check the classification schema for the correct terminology for that nation</dd>
+
+            <dt>"Classification schema for nation X has expired"</dt>
+            <dd>Solution: Contact an administrator to update the classification schema</dd>
+
+            <dt>"No classification schema found for nation X"</dt>
+            <dd>Solution: The nation's schema needs to be created by an administrator</dd>
+        </dl>
+
+        <hr/>
+
+        <h2>Support & Resources</h2>
+        <ul>
+            <li><strong>GraphQL Playground:</strong> <a href="/playground">/playground</a> - Interactive API explorer with complete schema documentation</li>
+            <li><strong>GraphQL Endpoint:</strong> <a href="/graphql">/graphql</a> - Production API endpoint</li>
+            <li><strong>Schema Introspection:</strong> Available in the Playground "Docs" panel</li>
+        </ul>
+
+        <p class="text-muted mt-5">
+            <small>
+                NATO Classification Conversion API v0.2.1<br/>
+                For official use by authorized NATO personnel only.
+            </small>
+        </p>
+
     </col>
 {% endblock content %}
