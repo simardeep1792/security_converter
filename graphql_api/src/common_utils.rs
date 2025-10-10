@@ -54,6 +54,21 @@ pub fn is_analyst(ctx: &Context<'_>) -> bool {
 
 /// Field will be visible to users with UserRole::Admin and
 /// UserRole::Analyst
+pub fn is_user(ctx: &Context<'_>) -> bool {
+    if let Some(role) = ctx.data_opt::<UserRole>() {
+        let result = match role.cmp(&UserRole::User) {
+            Ordering::Less => false,
+            Ordering::Equal => true,
+            Ordering::Greater => true,
+        };
+        return result
+    } else {
+        return false
+    };
+}
+
+/// Field will be visible to users with UserRole::Admin and
+/// UserRole::Analyst
 pub fn is_operator(ctx: &Context<'_>) -> bool {
     if let Some(role) = ctx.data_opt::<UserRole>() {
         let result = match role.cmp(&UserRole::Operator) {

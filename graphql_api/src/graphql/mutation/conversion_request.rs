@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::models::{
     ConversionRequest, ConversionResponse, InsertableConversionRequest,
 };
-use crate::common_utils::{UserRole, is_admin, RoleGuard};
+use crate::common_utils::{UserRole, is_admin, RoleGuard, is_user};
 
 #[derive(Default)]
 pub struct ConversionRequestMutation;
@@ -30,6 +30,11 @@ impl ConversionRequestMutation {
     /// 5. Returns both the request and response
     ///
     /// Requires authentication. The user must belong to a valid authority.
+    #[graphql(
+        name = "submitConversionRequest",
+        guard = "RoleGuard::new(UserRole::User)",
+        visible = "is_user",
+    )]
     pub async fn submit_conversion_request(
         &self,
         context: &Context<'_>,
@@ -82,6 +87,11 @@ impl ConversionRequestMutation {
     /// Useful for batch processing or manual review workflows.
     ///
     /// Requires authentication.
+    #[graphql(
+        name = "createConversionRequest",
+        guard = "RoleGuard::new(UserRole::User)",
+        visible = "is_user",
+    )]
     pub async fn create_conversion_request(
         &self,
         context: &Context<'_>,
@@ -106,6 +116,7 @@ impl ConversionRequestMutation {
     ///
     /// Requires authentication.
     #[graphql(
+        name = "processConversionRequest",
         guard = "RoleGuard::new(UserRole::Admin)",
         visible = "is_admin",
     )]
@@ -125,6 +136,7 @@ impl ConversionRequestMutation {
     ///
     /// Requires admin privileges.
     #[graphql(
+        name = "markConversionRequestCompleted",
         guard = "RoleGuard::new(UserRole::Admin)",
         visible = "is_admin",
     )]
@@ -147,6 +159,7 @@ impl ConversionRequestMutation {
     ///
     /// Requires admin privileges.
     #[graphql(
+        name = "deleteConversionRequest",
         guard = "RoleGuard::new(UserRole::Admin)",
         visible = "is_admin",
     )]
