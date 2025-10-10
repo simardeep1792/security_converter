@@ -98,7 +98,7 @@ impl Metadata {
         let mut conn = database::connection()?;
         let res = metadata::table
             .filter(metadata::domain.eq(domain))
-            .select((metadata::data_object_id))
+            .select(metadata::data_object_id)
             .load::<Uuid>(&mut conn)?;
         Ok(res)
     }

@@ -320,7 +320,7 @@ impl ConversionRequest {
         let response = ConversionResponse::create(&response_payload);
 
         // Step 5: Update the Request to complete
-        &self.mark_completed();
+        let _ = self.mark_completed().expect("Unable to mark request completed");
 
         response
     }

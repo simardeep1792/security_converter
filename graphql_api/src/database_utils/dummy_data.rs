@@ -1,8 +1,7 @@
-use async_graphql::{Data, Error};
+use async_graphql::{Error};
 use diesel::{self, RunQueryDsl};
 use rand::Rng;
 use rand::seq::SliceRandom;
-use uuid::Uuid;
 
 use crate::models::{
     Authority, ConversionRequest, DataObject, InsertableConversionRequest, InsertableDataObject,

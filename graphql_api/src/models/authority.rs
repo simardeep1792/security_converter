@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use async_graphql::*;
 use chrono::prelude::*;
-use diesel::{self, ExpressionMethods, Insertable, PgTextExpressionMethods, Queryable};
+use diesel::{self, ExpressionMethods, Insertable, Queryable};
 use diesel::{QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
