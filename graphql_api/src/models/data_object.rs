@@ -147,3 +147,11 @@ impl NewDataObject {
         }
     }
 }
+
+/// A lightweight struct to accept JSON formatted data from a ConversionRequest
+/// needed to create a NewDataObject
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct InsertableDataObject {
+    pub title: String,
+    pub description: String,
+}

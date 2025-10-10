@@ -54,6 +54,21 @@ diesel::table! {
 }
 
 diesel::table! {
+    conversion_requests (id) {
+        id -> Uuid,
+        creator_id -> Uuid,
+        authority_id -> Uuid,
+        data_object_id -> Uuid,
+        #[max_length = 3]
+        source_nation_code -> Varchar,
+        target_nation_codes -> Array<Nullable<Text>>,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+        completed_at -> Nullable<Timestamp>,
+    }
+}
+
+diesel::table! {
     data_objects (id) {
         id -> Uuid,
         creator_id -> Uuid,
@@ -122,6 +137,9 @@ diesel::joinable!(authorities -> nations (nation_id));
 diesel::joinable!(authorities -> users (creator_id));
 diesel::joinable!(classification_schemas -> authorities (authority_id));
 diesel::joinable!(classification_schemas -> users (creator_id));
+diesel::joinable!(conversion_requests -> authorities (authority_id));
+diesel::joinable!(conversion_requests -> data_objects (data_object_id));
+diesel::joinable!(conversion_requests -> users (creator_id));
 diesel::joinable!(data_objects -> users (creator_id));
 diesel::joinable!(metadata -> data_objects (data_object_id));
 diesel::joinable!(nations -> users (creator_id));
@@ -130,6 +148,7 @@ diesel::joinable!(users -> valid_roles (role));
 diesel::allow_tables_to_appear_in_same_query!(
     authorities,
     classification_schemas,
+    conversion_requests,
     data_objects,
     metadata,
     nations,

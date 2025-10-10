@@ -133,3 +133,11 @@ impl NewMetadata {
         }
     }
 }
+
+/// A light struct to accept the JSON formatted Metadata included with
+/// a ConversionRequest
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct InsertableMetadata {
+    pub domain: String,
+    pub tags: Vec<Option<String>>,
+}

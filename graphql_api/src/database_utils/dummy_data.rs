@@ -5,8 +5,9 @@ use rand::seq::SliceRandom;
 use uuid::Uuid;
 
 use crate::models::{
-    Authority, DataObject, Nation, NewAuthority, NewClassificationSchema, NewDataObject,
-    NewMetadata, NewNation, User,
+    Authority, ConversionRequest, DataObject, InsertableConversionRequest, InsertableDataObject,
+    InsertableMetadata, Nation, NewAuthority, NewClassificationSchema, NewDataObject, NewMetadata,
+    NewNation, User,
 };
 use crate::progress::progress::ProgressLogger;
 use crate::{database, schema::*};
@@ -657,6 +658,122 @@ pub fn pre_populate_db_schema() -> Result<(), Error> {
     progress_data_objects.done();
     println!("✓ Inserted {} data objects", inserted_data_objects);
 
+    // ========== Create Conversion Requests ==========
+    println!("\n========== Creating Conversion Requests ==========");
+
+    let classification_levels = vec!["UNCLASSIFIED", "RESTRICTED", "CONFIDENTIAL", "SECRET", "TOP SECRET"];
+    let num_conversion_requests = 30;
+    let mut created_conversion_requests = 0;
+
+    let conversion_titles = vec![
+        "Intelligence Report",
+        "Tactical Assessment",
+        "Strategic Document",
+        "Operational Brief",
+        "Security Analysis",
+        "Mission Data",
+        "Threat Intelligence",
+        "Classified Communication",
+        "Defense Protocol",
+        "Military Exercise Report",
+    ];
+
+    let conversion_domains = vec![
+        "INTEL", "CYBER", "OPERATIONS", "LOGISTICS", "COMMUNICATIONS",
+        "NUCLEAR", "COUNTERTERRORISM", "MARITIME", "AEROSPACE", "SPECIAL-OPS",
+    ];
+
+    for i in 0..num_conversion_requests {
+        let creator = users.choose(&mut rng).unwrap();
+        let authority = created_authorities.choose(&mut rng).unwrap();
+        let source_nation = created_nations.choose(&mut rng).unwrap();
+
+        // Select 1-3 random target nations (different from source)
+        let num_targets = rng.gen_range(1..=3);
+        let mut target_nations: Vec<String> = created_nations
+            .iter()
+            .filter(|n| n.nation_code != source_nation.nation_code)
+            .collect::<Vec<_>>()
+            .choose_multiple(&mut rng, num_targets)
+            .map(|n| n.nation_code.clone())
+            .collect();
+
+        // Ensure at least one target nation
+        if target_nations.is_empty() {
+            target_nations.push(
+                created_nations
+                    .iter()
+                    .find(|n| n.nation_code != source_nation.nation_code)
+                    .unwrap_or(&source_nation)
+                    .nation_code
+                    .clone()
+            );
+        }
+
+        // Create insertable data object for the conversion request
+        let title_template = conversion_titles.choose(&mut rng).unwrap();
+        let title = format!("{} - {} #{}", title_template, source_nation.nation_code, rng.gen_range(1000..9999));
+        let description = format!(
+            "Conversion request for {} from {} to {:?}. Created for testing purposes.",
+            title_template.to_lowercase(),
+            source_nation.nation_name,
+            target_nations
+        );
+
+        let insertable_data_object = InsertableDataObject {
+            title: title.clone(),
+            description: description.clone(),
+        };
+
+        // Create insertable metadata
+        let domain = conversion_domains.choose(&mut rng).unwrap();
+
+        let default_tags = &vec!["general", "nato", "classified"];
+        
+        let tags = metadata_domains
+            .iter()
+            .find(|(d, _)| d == domain)
+            .map(|(_, tags)| tags)
+            .unwrap_or(default_tags);
+
+        let num_tags = rng.gen_range(1..=3);
+
+        let selected_tags: Vec<Option<String>> = tags
+            .choose_multiple(&mut rng, num_tags)
+            .map(|s| Some(s.to_string()))
+            .collect();
+
+        let insertable_metadata = InsertableMetadata {
+            domain: domain.to_string(),
+            tags: selected_tags,
+        };
+
+        // Create the conversion request payload
+        let conversion_payload = InsertableConversionRequest {
+            user_id: creator.id,
+            authority_id: authority.id,
+            data_object: insertable_data_object,
+            metadata: insertable_metadata,
+            source_nation_code: source_nation.nation_code.clone(),
+            target_nation_codes: target_nations,
+        };
+
+        // Process the payload to create the conversion request
+        match ConversionRequest::process_payload(&conversion_payload) {
+            Ok(_) => {
+                created_conversion_requests += 1;
+            }
+            Err(e) => {
+                eprintln!("Failed to create conversion request {}: {:?}", i + 1, e);
+            }
+        }
+    }
+
+    let mut progress_conversion_requests =
+        ProgressLogger::new("Inserting Conversion Requests".to_owned(), num_conversion_requests);
+    progress_conversion_requests.done();
+    println!("✓ Inserted {} conversion requests", created_conversion_requests);
+
     // ========== Summary ==========
     println!("\n========================================");
     println!("✓ Database population complete!");
@@ -666,6 +783,7 @@ pub fn pre_populate_db_schema() -> Result<(), Error> {
     println!("  • {} Classification Schemas", inserted_schemas);
     println!("  • {} Metadata domains", inserted_metadata);
     println!("  • {} DataObjects", inserted_data_objects);
+    println!("  • {} Conversion Requests", created_conversion_requests);
     println!("========================================\n");
 
     Ok(())
