@@ -288,25 +288,18 @@ impl ConversionRequest {
         // Step 3: Convert NATO to each target nation classification
         let mut target_classifications = HashMap::new();
 
-        // Filter out None values from target_nation_codes
-        let target_codes: Vec<String> = self.target_nation_codes
-            .iter()
-            .filter_map(|c| c.clone())
-            .collect();
-
-        for target_code in target_codes {
-            let target_schema = ClassificationSchema::get_latest_by_nation_code(&target_code)?;
+        for target_schema in ClassificationSchema::get_latest_by_nation_codes(&self.target_nation_codes)? {
 
             // Verify target schema is valid
             if !target_schema.is_valid() {
                 return Err(Error::new(format!(
                     "Classification schema for target nation {} has expired",
-                    target_code
+                    target_schema.nation_code
                 )));
             }
 
             let target_classification = target_schema.from_nato(&nato_equivalent)?;
-            target_classifications.insert(target_code, target_classification);
+            target_classifications.insert(target_schema.nation_code, target_classification);
         }
 
         // Step 4: Create the ConversionResponse

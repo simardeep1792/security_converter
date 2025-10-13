@@ -11,7 +11,7 @@ use crate::models::{Authority, User};
 use crate::{database, schema::*};
 
 #[derive(
-    Debug, Clone, Deserialize, Serialize, Queryable, Insertable, AsChangeset, SimpleObject,
+    Debug, Clone, Deserialize, Serialize, Queryable, Insertable, AsChangeset, SimpleObject, QueryableByName
 )]
 #[graphql(complex)]
 #[diesel(table_name = classification_schemas)]
@@ -153,20 +153,51 @@ impl ClassificationSchema {
         Ok(res)
     }
 
+    // Return most recently updated Schema for a single nation by nation code
+    pub fn get_latest_by_nation_code(nation_code: &String) -> Result<Self> {
+        let mut conn = database::connection()?;
+        let res = classification_schemas::table
+            .filter(classification_schemas::nation_code.eq(nation_code))
+            .order(classification_schemas::updated_at.desc())
+            .first(&mut conn)?;
+        Ok(res)
+    }
+
+    // Return most recently updated Schemas by vector of nation codes
+    pub fn get_latest_by_nation_codes(code_options: &Vec<Option<String>>) -> Result<Vec<Self>> {
+        use diesel::dsl::sql;
+        use diesel::sql_types::Bool;
+
+        let mut conn = database::connection()?;
+
+        let mut codes = Vec::new();
+
+        for op in code_options.iter() {
+            match op {
+                Some(s) => { codes.push(s)},
+                None => (),
+            }
+        };
+                
+        let results = classification_schemas::table
+            .filter(classification_schemas::nation_code.eq_any(codes))
+            .filter(sql::<Bool>(
+                "updated_at = (
+                    SELECT MAX(updated_at) 
+                    FROM classification_schemas cs2 
+                    WHERE cs2.nation_code = classification_schemas.nation_code
+                )"
+            ))
+            .load::<Self>(&mut conn)?;
+        
+        Ok(results)
+    }
+
     pub fn get_by_authority_id(authority_id: &Uuid) -> Result<Vec<Self>> {
         let mut conn = database::connection()?;
         let res = classification_schemas::table
             .filter(classification_schemas::authority_id.eq(authority_id))
             .load::<ClassificationSchema>(&mut conn)?;
-        Ok(res)
-    }
-
-    pub fn get_latest_by_nation_code(nation_code: &String) -> Result<Self> {
-        let mut conn = database::connection()?;
-        let res = classification_schemas::table
-            .filter(classification_schemas::nation_code.eq(nation_code))
-            .order(classification_schemas::created_at.desc())
-            .first(&mut conn)?;
         Ok(res)
     }
 

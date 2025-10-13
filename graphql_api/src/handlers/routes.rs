@@ -5,6 +5,7 @@ use crate::handlers::{
     index,
     api_base,
     org_chart,
+    dashboard,
     playground_handler,
     graphql,
     graphql_ws,
@@ -14,6 +15,7 @@ pub fn configure_services(config: &mut web::ServiceConfig) {
     config.service(index);
     config.service(api_base);
     config.service(org_chart);
+    config.service(dashboard);
     config.service(Files::new("/static", std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("static")));
     // API use
     // Playground

@@ -22,6 +22,14 @@ pub async fn org_chart(data: web::Data<AppData>, _req:HttpRequest) -> impl Respo
     HttpResponse::Ok().content_type("text/html; charset=utf-8").body(rendered)
 }
 
+#[get("/dashboard")]
+pub async fn dashboard(data: web::Data<AppData>, _req:HttpRequest) -> impl Responder {
+    let ctx = Context::new();
+    let rendered = data.tmpl.render("dashboard.html", &ctx).unwrap();
+    // Explicitly set the content type to text/html
+    HttpResponse::Ok().content_type("text/html; charset=utf-8").body(rendered)
+}
+
 #[get("/{lang}/api")]
 pub async fn api_base(
     data: web::Data<AppData>,
@@ -31,7 +39,7 @@ pub async fn api_base(
     // id: Identity,
 ) -> impl Responder {
 
-    let ctx = Context::new(); 
+    let ctx = Context::new();
     let rendered = data.tmpl.render("api_base.html", &ctx).unwrap();
     HttpResponse::Ok().body(rendered)
 }
