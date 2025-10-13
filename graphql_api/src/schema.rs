@@ -101,6 +101,27 @@ diesel::table! {
         id -> Uuid,
         data_object_id -> Uuid,
         #[max_length = 256]
+        identifier -> Varchar,
+        #[max_length = 512]
+        authorization_reference -> Nullable<Varchar>,
+        authorization_reference_date -> Nullable<Timestamp>,
+        originator_organization_id -> Uuid,
+        custodian_organization_id -> Uuid,
+        #[max_length = 128]
+        format -> Varchar,
+        format_size -> Nullable<Int8>,
+        #[max_length = 128]
+        security_classification -> Varchar,
+        releasable_to_countries -> Nullable<Array<Nullable<Text>>>,
+        releasable_to_organizations -> Nullable<Array<Nullable<Text>>>,
+        releasable_to_categories -> Nullable<Array<Nullable<Text>>>,
+        #[max_length = 128]
+        disclosure_category -> Nullable<Varchar>,
+        handling_restrictions -> Nullable<Array<Nullable<Text>>>,
+        #[max_length = 512]
+        handling_authority -> Nullable<Varchar>,
+        no_handling_restrictions -> Nullable<Bool>,
+        #[max_length = 256]
         domain -> Varchar,
         tags -> Array<Nullable<Text>>,
         created_at -> Timestamp,

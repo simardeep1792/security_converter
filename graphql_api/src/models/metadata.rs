@@ -8,7 +8,7 @@ use diesel::{QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::models::DataObject;
+use crate::models::{Authority, DataObject};
 use crate::{database, schema::*};
 
 /// Represents the count of metadata records for a specific domain
@@ -25,7 +25,45 @@ pub struct DomainCount {
 #[diesel(table_name = metadata)]
 pub struct Metadata {
     pub id: Uuid,
+
     pub data_object_id: Uuid,
+
+    // Global Identifier
+    pub identifier: String, 
+
+    /// Authorization Reference - Legal basis for mission activities
+    /// Examples: U.S. Law, DoD Policy, OPORD, FRAGO, MOU, Court Order
+    pub authorization_reference: Option<String>,
+    pub authorization_reference_date: Option<NaiveDateTime>,
+    
+    /// Originator - Organization primarily responsible for generating the resource
+    /// Should not change throughout data asset life cycle
+    #[graphql(skip)]
+    pub originator_organization_id: Uuid, // References Authority
+    #[graphql(skip)]
+    pub custodian_organization_id: Uuid, // References Authority
+
+    /// Format - Physical attributes of data asset (e.g., email, JPEG, XML)
+    /// Important for machine-to-machine interoperability
+    pub format: String,
+    pub format_size: Option<i64>,
+
+    // Safeguarding and Securing
+    pub security_classification: String, // e.g., "UNCLASSIFIED", "SECRET", "TOP SECRET"
+
+    /// Disclosure & Releasability - Who can receive the resource
+    /// Must have at least one: Country/Countries, Organization, or Category of People
+    pub releasable_to_countries: Option<Vec<Option<String>>>, // e.g., ["USA", "GBR", "CAN"]
+    pub releasable_to_organizations: Option<Vec<Option<String>>>, // e.g., ["NATO", "FVEY"]
+    pub releasable_to_categories: Option<Vec<Option<String>>>, // e.g., ["contractors", "public"]
+    pub disclosure_category: Option<String>, // e.g., "Category C"
+
+    /// Handling Restrictions - Limitations beyond classification
+    /// Examples: CUI, privacy controls, PII, law enforcement, medical restrictions
+    pub handling_restrictions: Option<Vec<Option<String>>>,
+    pub handling_authority: Option<String>, // legislation/policy authorizing restrictions
+    pub no_handling_restrictions: Option<bool>, // Explicitly indicates no restrictions
+
     pub domain: String,
     pub tags: Vec<Option<String>>, // PostgreSQL TEXT[] array
     pub created_at: NaiveDateTime,
@@ -35,8 +73,16 @@ pub struct Metadata {
 // GraphQL implementation
 #[ComplexObject]
 impl Metadata {
-    pub async fn get_data_object(&self) -> Result<DataObject> {
+    pub async fn data_object(&self) -> Result<DataObject> {
         DataObject::get_by_id(&self.data_object_id)
+    }
+
+    pub async fn originating_organization(&self) -> Result<Authority> {
+        Authority::get_by_id(&self.originator_organization_id)
+    }
+
+    pub async fn custodian_organization(&self) -> Result<Authority> {
+        Authority::get_by_id(&self.custodian_organization_id)
     }
 }
 
@@ -144,19 +190,40 @@ impl Metadata {
 #[derive(Debug, Clone, Deserialize, Serialize, Insertable, InputObject)]
 #[diesel(table_name = metadata)]
 pub struct NewMetadata {
+    
     pub data_object_id: Uuid,
+    // Global Identifier
+    pub identifier: String,
+
+    // Authorization Reference
+    pub authorization_reference: Option<String>,
+    pub authorization_reference_date: Option<NaiveDateTime>,
+
+    // Originator and Custodian
+    pub originator_organization_id: Uuid,
+    pub custodian_organization_id: Uuid,
+
+    // Format
+    pub format: String,
+    pub format_size: Option<i64>,
+
+    // Safeguarding and Securing
+    pub security_classification: String,
+
+    // Disclosure & Releasability
+    pub releasable_to_countries: Option<Vec<Option<String>>>,
+    pub releasable_to_organizations: Option<Vec<Option<String>>>,
+    pub releasable_to_categories: Option<Vec<Option<String>>>,
+    pub disclosure_category: Option<String>,
+
+    // Handling Restrictions
+    pub handling_restrictions: Option<Vec<Option<String>>>,
+    pub handling_authority: Option<String>,
+    pub no_handling_restrictions: Option<bool>,
+
+    // Legacy fields
     pub domain: String,
     pub tags: Vec<Option<String>>,
-}
-
-impl NewMetadata {
-    pub fn new(data_object_id: Uuid, domain: String, tags: Vec<Option<String>>) -> Self {
-        NewMetadata {
-            data_object_id,
-            domain,
-            tags,
-        }
-    }
 }
 
 /// A light struct to accept the JSON formatted Metadata included with
@@ -164,6 +231,36 @@ impl NewMetadata {
 #[derive(Debug, Clone, Deserialize, Serialize, InputObject)]
 #[graphql(name = "MetadataInput")]
 pub struct InsertableMetadata {
+    // Global Identifier
+    pub identifier: String,
+
+    // Authorization Reference
+    pub authorization_reference: Option<String>,
+    pub authorization_reference_date: Option<NaiveDateTime>,
+
+    // Originator and Custodian
+    pub originator_organization_id: Uuid, // Authority
+    pub custodian_organization_id: Uuid, // Authority
+
+    // Format
+    pub format: String,
+    pub format_size: Option<i64>,
+
+    // Safeguarding and Securing
+    pub security_classification: String,
+
+    // Disclosure & Releasability
+    pub releasable_to_countries: Option<Vec<Option<String>>>,
+    pub releasable_to_organizations: Option<Vec<Option<String>>>,
+    pub releasable_to_categories: Option<Vec<Option<String>>>,
+    pub disclosure_category: Option<String>,
+
+    // Handling Restrictions
+    pub handling_restrictions: Option<Vec<Option<String>>>,
+    pub handling_authority: Option<String>,
+    pub no_handling_restrictions: Option<bool>,
+
+    // Legacy fields
     pub domain: String,
     pub tags: Vec<Option<String>>,
 }

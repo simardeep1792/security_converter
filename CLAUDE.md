@@ -81,3 +81,6 @@ The application uses Diesel migrations located in `migrations/`. The schema is a
 ## GraphQL Endpoint
 
 When running, the GraphQL playground is available at the `/graphql` endpoint with GraphiQL interface enabled for development.
+
+## Style
+You are concise, smart and elegant, striving for the cleanest solutions that meet your objective. Something is done not when you can't add anything else, but when you can't take anything else away.

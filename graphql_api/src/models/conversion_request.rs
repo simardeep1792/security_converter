@@ -122,7 +122,39 @@ impl ConversionRequest {
 
         // Step 2: Create the Metadata with the generated DataObject ID
         let new_metadata = NewMetadata {
+            // DataObject link
             data_object_id: data_object.id,
+
+            // Global Identifier
+            identifier: payload.metadata.identifier.clone(),
+            
+            // Authorization Reference
+            authorization_reference: payload.metadata.authorization_reference.clone(),
+            authorization_reference_date: payload.metadata.authorization_reference_date,
+            
+            // Originator and Custodian
+            originator_organization_id: payload.metadata.originator_organization_id,
+            custodian_organization_id: payload.metadata.custodian_organization_id,
+            
+            // Format
+            format: payload.metadata.format.clone(),
+            format_size: payload.metadata.format_size,
+            
+            // Safeguarding and Securing
+            security_classification: payload.metadata.security_classification.clone(),
+            
+            // Disclosure & Releasability
+            releasable_to_countries: payload.metadata.releasable_to_countries.clone(),
+            releasable_to_organizations: payload.metadata.releasable_to_organizations.clone(),
+            releasable_to_categories: payload.metadata.releasable_to_categories.clone(),
+            disclosure_category: payload.metadata.disclosure_category.clone(),
+            
+            // Handling Restrictions
+            handling_restrictions: payload.metadata.handling_restrictions.clone(),
+            handling_authority: payload.metadata.handling_authority.clone(),
+            no_handling_restrictions: payload.metadata.no_handling_restrictions,
+            
+            // Legacy fields
             domain: payload.metadata.domain.clone(),
             tags: payload.metadata.tags.clone(),
         };

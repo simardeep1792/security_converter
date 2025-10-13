@@ -649,11 +649,6 @@ pub fn pre_populate_db_schema() -> Result<(), Error> {
             .map(|s| Some(s.to_string()))
             .collect();
 
-        let insertable_metadata = InsertableMetadata {
-            domain: domain.to_string(),
-            tags: selected_tags,
-        };
-
         // Get the classification schema for the source nation to use correct terminology
         let source_classification = match crate::models::ClassificationSchema::get_latest_by_nation_code(
             &source_nation.nation_code
@@ -672,8 +667,147 @@ pub fn pre_populate_db_schema() -> Result<(), Error> {
             Err(_) => {
                 // Fallback to generic NATO classifications if schema not found
                 eprintln!("Warning: No classification schema found for nation {}. Skipping request.", source_nation.nation_code);
+                conversion_errors += 1;
                 continue; // Skip this request
             }
+        };
+
+        // Generate realistic metadata with proper security classification fields
+        // Use authorities from the SOURCE nation for metadata
+        let source_nation_authorities: Vec<&Authority> = created_authorities
+            .iter()
+            .filter(|a| {
+                // Find the nation for this authority
+                created_nations.iter().any(|n| n.id == a.nation_id && n.nation_code == source_nation.nation_code)
+            })
+            .collect();
+
+        // If no authorities found for source nation, skip this request
+        if source_nation_authorities.is_empty() {
+            eprintln!("Warning: No authorities found for source nation {}. Skipping request.", source_nation.nation_code);
+            conversion_errors += 1;
+            continue;
+        }
+
+        let originator_org = source_nation_authorities.choose(&mut rng).unwrap();
+        let custodian_org = source_nation_authorities.choose(&mut rng).unwrap();
+
+        // Format types
+        let formats = vec!["application/pdf", "text/plain", "application/json", "image/jpeg", "application/xml", "application/msword"];
+        let format = formats.choose(&mut rng).unwrap().to_string();
+        let format_size = if rng.gen_bool(0.8) { Some(rng.gen_range(1024..10485760)) } else { None };
+
+        // Releasability - include source nation and possibly target nations
+        let releasable_to_countries = if rng.gen_bool(0.7) {
+            let mut countries = vec![Some(source_nation.nation_code.clone())];
+            // 50% chance to include target nations
+            if rng.gen_bool(0.5) {
+                for target in &target_nations {
+                    countries.push(Some(target.clone()));
+                }
+            }
+            Some(countries)
+        } else {
+            None
+        };
+
+        let releasable_to_organizations = if rng.gen_bool(0.4) {
+            Some(vec![Some("NATO".to_string()), Some("FVEY".to_string())])
+        } else {
+            None
+        };
+
+        let releasable_to_categories = if rng.gen_bool(0.3) {
+            Some(vec![Some("military".to_string()), Some("intelligence".to_string())])
+        } else {
+            None
+        };
+
+        let disclosure_category = if rng.gen_bool(0.5) {
+            let categories = vec!["Category A", "Category B", "Category C"];
+            Some(categories.choose(&mut rng).unwrap().to_string())
+        } else {
+            None
+        };
+
+        // Handling restrictions
+        let handling_restrictions = if rng.gen_bool(0.6) {
+            let restrictions = vec!["NOFORN", "ORCON", "PROPIN", "REL TO", "EYES ONLY"];
+            let num_restrictions = rng.gen_range(1..=3);
+            Some(
+                restrictions
+                    .choose_multiple(&mut rng, num_restrictions)
+                    .map(|s| Some(s.to_string()))
+                    .collect()
+            )
+        } else {
+            None
+        };
+
+        let handling_authority = if handling_restrictions.is_some() {
+            let authorities = vec![
+                "DoD Directive 5230.09",
+                "NATO STANAG 2161",
+                "Executive Order 13526",
+                "National Security Act",
+            ];
+            Some(authorities.choose(&mut rng).unwrap().to_string())
+        } else {
+            None
+        };
+
+        let no_handling_restrictions = if handling_restrictions.is_none() {
+            Some(true)
+        } else {
+            None
+        };
+
+        // Authorization reference
+        let authorization_refs = vec![
+            "Executive Order 13526",
+            "DoD 5220.22-M NISPOM",
+            "NATO STANAG 2161",
+            "Court Order 2024-123",
+            "MOU-NATO-2023",
+            "OPORD 24-001",
+            "FRAGO 12-2024",
+        ];
+        let authorization_reference = if rng.gen_bool(0.7) {
+            Some(authorization_refs.choose(&mut rng).unwrap().to_string())
+        } else {
+            None
+        };
+
+        let authorization_reference_date = if authorization_reference.is_some() {
+            Some(
+                chrono::Utc::now().naive_utc() - chrono::Duration::days(rng.gen_range(1..365))
+            )
+        } else {
+            None
+        };
+
+        let insertable_metadata = InsertableMetadata {
+            identifier: format!("DOC-{}-{}-{}",
+                source_nation.nation_code,
+                domain,
+                uuid::Uuid::new_v4().to_string().split('-').next().unwrap()
+            ),
+            authorization_reference,
+            authorization_reference_date,
+            originator_organization_id: originator_org.id,
+            custodian_organization_id: custodian_org.id,
+            format,
+            format_size,
+            security_classification: source_classification.clone(),
+            releasable_to_countries,
+            releasable_to_organizations,
+            releasable_to_categories,
+            disclosure_category,
+            handling_restrictions,
+            handling_authority,
+            no_handling_restrictions,
+            domain: domain.to_string(),
+            tags: selected_tags,
         };
 
         let conversion_payload = InsertableConversionRequest {
