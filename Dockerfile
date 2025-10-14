@@ -43,7 +43,7 @@ RUN cargo build --release
 FROM rust:latest
 
 # Copy final build artifact
-COPY --from=build /security_classification_converter/target/release/security_classification_converter .
+COPY --from=build /security_classification_converter/target/release/graphql_api .
 
 # Copy dummy data (.csv) files
 COPY --from=build /security_classification_converter/seeds seeds
@@ -55,4 +55,4 @@ EXPOSE 8080
 
 # Set startup command
 
-CMD ["./security_classification_converter"]
+CMD ["./graphql_api"]

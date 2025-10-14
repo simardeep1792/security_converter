@@ -29,12 +29,3 @@ services:
     ports:
       - 8080:8080
 
-  frontend:
-    build: "orgchart"
-    restart: always
-    env_file:
-      - .env
-    depends_on:
-      - db
-    ports:
-      - 8081:8080
