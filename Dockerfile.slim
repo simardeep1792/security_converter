@@ -17,9 +17,7 @@ WORKDIR /app
 COPY Cargo.toml Cargo.lock ./
 
 # Now the source code and migrations, both required for the build
-COPY graphql_api/src src
-COPY graphql_api/static static
-COPY errors errors
+COPY src src
 
 # migrations are embeded database.rs:19:40
 COPY migrations migrations

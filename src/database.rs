@@ -7,7 +7,7 @@ use std::env;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 use crate::database_utils::pre_populate_db_schema;
-use errors::CustomError;
+use crate::errors::CustomError;
 
 pub type PostgresPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 pub type DbConnection = r2d2::PooledConnection<ConnectionManager<PgConnection>>;

@@ -1,5 +1,4 @@
 use actix_web::{web, guard};
-use actix_files::Files;
 
 use crate::handlers::{
     index,
@@ -16,7 +15,6 @@ pub fn configure_services(config: &mut web::ServiceConfig) {
     config.service(api_base);
     config.service(org_chart);
     config.service(dashboard);
-    config.service(Files::new("/static", std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("static")));
     // API use
     // Playground
     config.route("/playground", web::post().to(graphql));

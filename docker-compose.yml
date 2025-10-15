@@ -7,7 +7,7 @@ services:
     environment:
       - POSTGRES_USER=christopherallison
       - POSTGRES_PASSWORD=12345
-      - POSTGRES_DB=security_classification_converter
+      - POSTGRES_DB=graphql_api
     ports:
       - 5434:5434
 
@@ -21,7 +21,7 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=8080
-      - DATABASE_URL=postgres://christopherallison:12345@db/security_classification_converter?sslmode=disable
+      - DATABASE_URL=postgres://christopherallison:12345@db/graphql_api?sslmode=disable
     env_file:
       - .env
     depends_on:

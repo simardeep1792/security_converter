@@ -13,6 +13,7 @@
 .env.test.local
 .env.production.local
 *.dump
+.pdf
 
 orgchart/npm-debug.log*
 orgchart/yarn-debug.log*

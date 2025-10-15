@@ -2,5 +2,5 @@
 # see diesel.rs/guides/configuring-diesel-cli
 
 [print_schema]
-file = "graphql_api/src/schema.rs"
+file = "src/schema.rs"
 custom_type_derives = ["diesel::query_builder::QueryId"]
