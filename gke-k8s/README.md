@@ -5,7 +5,7 @@ I could not get those to run, so I wrote these. We can reconcile all that later.
 
 The service seems to be functioning correctly. The database seed still takes about 10 minutes to complete, be the server is up after that.
 
-I am still pulling the `api` (`people-data-api`) container that luc pushed to dockerhub (`belliveaul/epicenter:latest`), until our own pipeline is ready. Although I have scripts for cloudbuild we could integrate for CI, and the commands to provision the artifact registry are in the *GKE Setup* section below.
+I am still pulling the `api` (`security_converter`) container that luc pushed to dockerhub (`belliveaul/epicenter:latest`), until our own pipeline is ready. Although I have scripts for cloudbuild we could integrate for CI, and the commands to provision the artifact registry are in the *GKE Setup* section below.
 
 I haven't yet managed to provision a persistent disk, so just as in Luc's manifests, the database is ephemeral.
 (i.e. it will be lost when the database pod is deleted, or re-created)

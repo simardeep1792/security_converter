@@ -50,7 +50,7 @@ docker compose down; sleep 2; docker compose up -d db; sleep 10; diesel migratio
 docker compose exec -it db psql -U christopherallison -W security_classification_converter
 docker compose logs -f
 
-time docker compose build people-data-api
+time docker compose build security_converter
 docker images | grep epi
 docker compose up
 ```

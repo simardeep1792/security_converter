@@ -11,7 +11,7 @@ services:
     ports:
       - 5434:5434
 
-  people-data-api:
+  security_converter:
     build:
       # dockerfile: "Dockerfile"
       # dockerfile: "Dockerfile.simple"

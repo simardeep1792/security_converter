@@ -48,7 +48,7 @@ cd graphql_api && cargo run
 docker compose up
 
 # Build just the API container
-docker compose build people-data-api
+docker compose build security_converter
 
 # Run database only for local development
 docker compose up -d db
