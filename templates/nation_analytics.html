@@ -418,6 +418,7 @@
                                     id
                                     securityClassification
                                     domain
+                                    format
                                     releasableToCountries
                                     releasableToOrganizations
                                     handlingRestrictions
@@ -456,6 +457,7 @@
                                     id
                                     securityClassification
                                     domain
+                                    format
                                     releasableToCountries
                                     releasableToOrganizations
                                     handlingRestrictions
@@ -748,6 +750,7 @@
                         <td>${r.dataObject ? r.dataObject.title : 'N/A'}</td>
                         <td><span class="badge badge-classification">${metadata.securityClassification || 'N/A'}</span></td>
                         <td><span class="badge badge-domain">${metadata.domain || 'N/A'}</span></td>
+                        <td>${metadata.format || 'N/A'}</td>
                         <td>${originatorName}</td>
                         <td>${targets}</td>
                         <td>${restrictions}</td>
@@ -763,6 +766,7 @@
                             <th>Document</th>
                             <th>Classification</th>
                             <th>Domain</th>
+                            <th>Format</th>
                             <th>Originator</th>
                             <th>Target Nations</th>
                             <th>Restrictions</th>
