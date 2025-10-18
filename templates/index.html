@@ -17,6 +17,7 @@
             <li><a href="/graphql"><strong>GraphQL Endpoint</strong></a> - Production API endpoint</li>
             <li><a href="/playground"><strong>GraphQL Playground</strong></a> - Interactive API explorer with schema documentation</li>
             <li><a href="/dashboard"><strong>Analytics Dashboard</strong></a> - Real-time KPIs and performance metrics</li>
+            <li><a href="/nation-analytics"><strong>Nation Analytics</strong></a> - Per-nation request analytics and metadata insights</li>
         </ul>
 
         <hr/>
@@ -27,6 +28,7 @@
             <li><a href="#authentication">Authentication</a></li>
             <li><a href="#queries">Queries</a></li>
             <li><a href="#mutations">Mutations</a></li>
+            <li><a href="#metadata-fields">Metadata Field Reference (DoD Compliant)</a></li>
             <li><a href="#examples">Complete Examples</a></li>
         </ol>
 
@@ -210,6 +212,19 @@
       description: "Strategic intelligence assessment"
     }
     metadata: {
+      identifier: "urn:uuid:550e8400-e29b-41d4-a716-446655440000"
+      authorizationReference: "OPORD 24-001"
+      authorizationReferenceDate: "2024-01-15T00:00:00"
+      originatorOrganizationId: "originator-authority-uuid"
+      custodianOrganizationId: "custodian-authority-uuid"
+      format: "application/pdf"
+      formatSize: 2048576
+      securityClassification: "SECRET"
+      releasableToCountries: ["USA", "GBR", "FRA"]
+      releasableToOrganizations: ["NATO"]
+      disclosureCategory: "Category C"
+      handlingRestrictions: ["CUI"]
+      handlingAuthority: "32 CFR Part 2002"
       domain: "INTEL"
       tags: ["urgent", "classified", "strategic"]
     }
@@ -242,6 +257,12 @@
       description: "Mission planning document"
     }
     metadata: {
+      identifier: "urn:uuid:660e8400-e29b-41d4-a716-446655440001"
+      originatorOrganizationId: "originator-authority-uuid"
+      custodianOrganizationId: "custodian-authority-uuid"
+      format: "application/msword"
+      securityClassification: "CONFIDENTIAL"
+      releasableToCountries: ["GBR", "USA", "CAN"]
       domain: "OPERATIONS"
       tags: ["planning"]
     }
@@ -275,6 +296,182 @@
         <h3>4.5 Delete Request (Admin Only)</h3>
         <pre><code>mutation DeleteRequest {
   deleteConversionRequest(requestId: "uuid-here")
+}</code></pre>
+
+        <hr/>
+
+        <h2 id="metadata-fields">4.6 Metadata Field Reference (DoD Compliant)</h2>
+        <p>All conversion requests must include metadata compliant with <strong>DoD Metadata Guidance (January 2023)</strong>. The metadata structure includes 10 required baseline fields organized into Resource Description and Safeguarding categories.</p>
+
+        <h3>Required Fields</h3>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Example</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>identifier</code></td>
+                    <td>String</td>
+                    <td>Universal unique reference (GUID or URN format)</td>
+                    <td>"urn:uuid:550e8400-e29b-41d4-a716-446655440000"</td>
+                </tr>
+                <tr>
+                    <td><code>originatorOrganizationId</code></td>
+                    <td>UUID</td>
+                    <td>Authority ID of organization primarily responsible for generating the resource</td>
+                    <td>"987e6543-e21b-12d3-a456-426614174000"</td>
+                </tr>
+                <tr>
+                    <td><code>custodianOrganizationId</code></td>
+                    <td>UUID</td>
+                    <td>Authority ID of organization legally responsible for the resource</td>
+                    <td>"987e6543-e21b-12d3-a456-426614174000"</td>
+                </tr>
+                <tr>
+                    <td><code>format</code></td>
+                    <td>String</td>
+                    <td>File format or physical medium (MIME type preferred)</td>
+                    <td>"application/pdf", "image/jpeg", "text/xml"</td>
+                </tr>
+                <tr>
+                    <td><code>securityClassification</code></td>
+                    <td>String</td>
+                    <td>Highest classification level in the resource</td>
+                    <td>"UNCLASSIFIED", "SECRET", "TOP SECRET"</td>
+                </tr>
+                <tr>
+                    <td><code>domain</code></td>
+                    <td>String</td>
+                    <td>Mission domain or category (legacy field)</td>
+                    <td>"INTEL", "OPERATIONS", "LOGISTICS"</td>
+                </tr>
+                <tr>
+                    <td><code>tags</code></td>
+                    <td>Array[String]</td>
+                    <td>Keywords for categorization (legacy field)</td>
+                    <td>["urgent", "strategic", "classified"]</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Optional Fields</h3>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Example</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>authorizationReference</code></td>
+                    <td>String</td>
+                    <td>Documented legal basis for mission activities (law, policy, order)</td>
+                    <td>"OPORD 24-001", "EO 13526", "FRAGO 2024-027"</td>
+                </tr>
+                <tr>
+                    <td><code>authorizationReferenceDate</code></td>
+                    <td>DateTime</td>
+                    <td>Date of authorization reference document (ISO 8601 format)</td>
+                    <td>"2024-01-15T00:00:00"</td>
+                </tr>
+                <tr>
+                    <td><code>formatSize</code></td>
+                    <td>Integer</td>
+                    <td>File size in bytes</td>
+                    <td>2048576 (2 MB)</td>
+                </tr>
+                <tr>
+                    <td><code>releasableToCountries</code></td>
+                    <td>Array[String]</td>
+                    <td>Country codes approved for disclosure (ISO 3166-1 alpha-3)</td>
+                    <td>["USA", "GBR", "CAN", "AUS", "NZL"]</td>
+                </tr>
+                <tr>
+                    <td><code>releasableToOrganizations</code></td>
+                    <td>Array[String]</td>
+                    <td>Organizations approved for disclosure</td>
+                    <td>["NATO", "FVEY", "EU"]</td>
+                </tr>
+                <tr>
+                    <td><code>releasableToCategories</code></td>
+                    <td>Array[String]</td>
+                    <td>Categories of people approved for disclosure</td>
+                    <td>["contractors", "public", "cleared personnel"]</td>
+                </tr>
+                <tr>
+                    <td><code>disclosureCategory</code></td>
+                    <td>String</td>
+                    <td>DoD disclosure category designation</td>
+                    <td>"Category A", "Category B", "Category C"</td>
+                </tr>
+                <tr>
+                    <td><code>handlingRestrictions</code></td>
+                    <td>Array[String]</td>
+                    <td>Non-classification limitations (CUI, PII, FOUO, etc.)</td>
+                    <td>["CUI", "PII", "NOFORN", "FOUO"]</td>
+                </tr>
+                <tr>
+                    <td><code>handlingAuthority</code></td>
+                    <td>String</td>
+                    <td>Policy or legislation authorizing handling restrictions</td>
+                    <td>"32 CFR Part 2002", "Privacy Act of 1974"</td>
+                </tr>
+                <tr>
+                    <td><code>noHandlingRestrictions</code></td>
+                    <td>Boolean</td>
+                    <td>Explicitly indicates no handling restrictions apply</td>
+                    <td>true, false</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Metadata Best Practices</h3>
+        <ul>
+            <li><strong>Use structured identifiers</strong> - URN format preferred: <code>urn:uuid:{guid}</code></li>
+            <li><strong>Reference valid Authority IDs</strong> - Originator and Custodian must be existing Authority records</li>
+            <li><strong>Use standard MIME types</strong> - For format field: application/pdf, image/jpeg, text/xml, etc.</li>
+            <li><strong>Be specific with classifications</strong> - Use exact terms from your nation's ClassificationSchema</li>
+            <li><strong>Specify releasability</strong> - At least one of: countries, organizations, or categories</li>
+            <li><strong>Document restrictions clearly</strong> - Include handling authority for audit trail</li>
+            <li><strong>Maintain timestamps</strong> - Use ISO 8601 format (YYYY-MM-DDTHH:MM:SS) in UTC</li>
+        </ul>
+
+        <h3>Minimal Valid Metadata Example</h3>
+        <pre><code>{
+  "identifier": "urn:uuid:550e8400-e29b-41d4-a716-446655440000",
+  "originatorOrganizationId": "987e6543-e21b-12d3-a456-426614174000",
+  "custodianOrganizationId": "987e6543-e21b-12d3-a456-426614174000",
+  "format": "text/plain",
+  "securityClassification": "UNCLASSIFIED",
+  "domain": "GENERAL",
+  "tags": ["test"]
+}</code></pre>
+
+        <h3>Complete Metadata Example</h3>
+        <pre><code>{
+  "identifier": "urn:uuid:770e8400-e29b-41d4-a716-446655440002",
+  "authorizationReference": "FRAGO 2024-027",
+  "authorizationReferenceDate": "2024-03-20T10:30:00",
+  "originatorOrganizationId": "987e6543-e21b-12d3-a456-426614174000",
+  "custodianOrganizationId": "987e6543-e21b-12d3-a456-426614174000",
+  "format": "application/pdf",
+  "formatSize": 5242880,
+  "securityClassification": "SECRET",
+  "releasableToCountries": ["USA", "GBR", "FRA"],
+  "releasableToOrganizations": ["NATO"],
+  "disclosureCategory": "Category B",
+  "handlingRestrictions": ["CUI", "NOFORN"],
+  "handlingAuthority": "EO 13526",
+  "domain": "INTEL",
+  "tags": ["regional", "threat-assessment", "strategic"]
 }</code></pre>
 
         <hr/>
@@ -323,6 +520,19 @@
       "description": "Comprehensive intelligence report on regional threats"
     },
     "metadata": {
+      "identifier": "urn:uuid:770e8400-e29b-41d4-a716-446655440002",
+      "authorizationReference": "FRAGO 2024-027",
+      "authorizationReferenceDate": "2024-03-20T10:30:00",
+      "originatorOrganizationId": "987e6543-e21b-12d3-a456-426614174000",
+      "custodianOrganizationId": "987e6543-e21b-12d3-a456-426614174000",
+      "format": "application/pdf",
+      "formatSize": 5242880,
+      "securityClassification": "SECRET",
+      "releasableToCountries": ["USA", "GBR", "FRA"],
+      "releasableToOrganizations": ["NATO"],
+      "disclosureCategory": "Category B",
+      "handlingRestrictions": ["CUI", "NOFORN"],
+      "handlingAuthority": "EO 13526",
       "domain": "INTEL",
       "tags": ["regional", "threat-assessment", "strategic"]
     },
@@ -493,7 +703,10 @@
         <ul>
             <li><strong>Always authenticate</strong> - Include your JWT token in the Authorization header</li>
             <li><strong>Use correct terminology</strong> - Check the ClassificationSchema for your nation's specific terms</li>
-            <li><strong>Provide complete metadata</strong> - Include domain and relevant tags for better organization</li>
+            <li><strong>Provide complete metadata</strong> - Include all required DoD-compliant metadata fields (see <a href="#metadata-fields">Metadata Field Reference</a>)</li>
+            <li><strong>Use structured identifiers</strong> - Use URN format for metadata identifiers: <code>urn:uuid:{guid}</code></li>
+            <li><strong>Reference valid authorities</strong> - Ensure originator and custodian organization IDs exist in the system</li>
+            <li><strong>Specify releasability</strong> - Always include at least one releasability field (countries, organizations, or categories)</li>
             <li><strong>Check schema expiration</strong> - Classification schemas may expire and be updated</li>
             <li><strong>Handle errors gracefully</strong> - The API returns descriptive error messages</li>
             <li><strong>Batch operations</strong> - Use createConversionRequest for multiple requests, then process in batch</li>

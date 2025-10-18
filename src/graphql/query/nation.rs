@@ -1,6 +1,6 @@
 use async_graphql::*;
 
-use crate::models::Nation;
+use crate::models::{Nation, ConversionRequest};
 use uuid::Uuid;
 
 //use crate::common_utils::{RoleGuard, is_admin, UserRole};

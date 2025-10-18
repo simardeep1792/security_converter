@@ -245,6 +245,16 @@ impl ConversionRequest {
         Ok(res)
     }
 
+    /// Get all conversion requests by target nation code (checks if nation code is in target_nation_codes array)
+    pub fn get_by_target_nation_code(nation_code: &str) -> Result<Vec<Self>> {
+
+        let mut conn = connection()?;
+        let res = conversion_requests::table
+            .filter(conversion_requests::target_nation_codes.contains(vec![nation_code]))
+            .load::<ConversionRequest>(&mut conn)?;
+        Ok(res)
+    }
+
     /// Get all pending (not completed) conversion requests
     pub fn get_pending() -> Result<Vec<Self>> {
         let mut conn = connection()?;

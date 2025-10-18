@@ -7,7 +7,7 @@ use diesel::{QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::models::{Authority, User};
+use crate::models::{Authority, ConversionRequest, User};
 use crate::{database, schema::*};
 
 #[derive(
@@ -34,6 +34,14 @@ impl Nation {
 
     pub async fn authorities(&self) -> Result<Vec<Authority>> {
         Authority::get_by_nation_id(&self.id)
+    }
+
+    pub async fn conversion_requests(&self) -> Result<Vec<ConversionRequest>> {
+        ConversionRequest::get_by_source_nation_code(&self.nation_code)
+    }
+
+    pub async fn inbound_conversion_requests(&self) -> Result<Vec<ConversionRequest>> {
+        ConversionRequest::get_by_target_nation_code(&self.nation_code)
     }
 }
 
@@ -72,6 +80,15 @@ impl Nation {
     pub fn get_all() -> Result<Vec<Self>> {
         let mut conn = database::connection()?;
         let res = nations::table.load::<Nation>(&mut conn)?;
+        Ok(res)
+    }
+
+    pub fn get_all_codes() -> Result<Vec<String>> {
+        let mut conn = database::connection()?;
+        let res = nations::table
+            .select(nations::nation_code)
+            .load::<String>(&mut conn)?;
+        
         Ok(res)
     }
 
