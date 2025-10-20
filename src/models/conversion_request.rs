@@ -80,13 +80,15 @@ impl ConversionRequest {
     }
 
     /// Get the data object that is being converted
-    pub async fn data_object(&self) -> Result<DataObject> {
-        DataObject::get_by_id(&self.data_object_id)
+    pub async fn data_object(&self) -> Result<crate::models::data_object::DataObjectGraphQL> {
+        let obj = DataObject::get_by_id(&self.data_object_id)?;
+        Ok(obj.into())
     }
 
     /// Get the metadata for the data object
-    pub async fn metadata(&self) -> Result<Metadata> {
-        Metadata::get_by_data_object_id(&self.data_object_id)
+    pub async fn metadata(&self) -> Result<crate::models::metadata::MetadataGraphQL> {
+        let meta = Metadata::get_by_data_object_id(&self.data_object_id)?;
+        Ok(meta.into())
     }
 
     pub async fn conversion_response(&self) -> Result<ConversionResponse> {
@@ -113,17 +115,16 @@ impl ConversionRequest {
         let mut conn = connection()?;
 
         // Step 1: Create the DataObject
-        let new_data_object = NewDataObject {
-            creator_id: payload.user_id,
+        let insertable_data_object = InsertableDataObject {
             title: payload.data_object.title.clone(),
             description: payload.data_object.description.clone(),
         };
+
+        let new_data_object = insertable_data_object.to_new_data_object(payload.user_id);
         let data_object = DataObject::create(&new_data_object)?;
 
         // Step 2: Create the Metadata with the generated DataObject ID
-        let new_metadata = NewMetadata {
-            // DataObject link
-            data_object_id: data_object.id,
+        let insertable_metadata = InsertableMetadata {
 
             // Global Identifier
             identifier: payload.metadata.identifier.clone(),
@@ -158,6 +159,8 @@ impl ConversionRequest {
             domain: payload.metadata.domain.clone(),
             tags: payload.metadata.tags.clone(),
         };
+
+        let new_metadata = insertable_metadata.to_new_metadata(data_object.id);
         let _metadata = Metadata::create(&new_metadata)?;
 
         // Step 3: Create the ConversionRequest

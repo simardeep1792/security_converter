@@ -8,6 +8,7 @@ use diesel::{QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::encryption::EncryptedString;
 use crate::models::{Authority, DataObject};
 use crate::{database, schema::*};
 
@@ -18,29 +19,24 @@ pub struct DomainCount {
     pub count: i64,
 }
 
-#[derive(
-    Debug, Clone, Deserialize, Serialize, Queryable, Insertable, AsChangeset, SimpleObject,
-)]
-#[graphql(complex)]
+/// Database model with encrypted fields
+#[derive(Debug, Clone, Queryable, Insertable, AsChangeset)]
 #[diesel(table_name = metadata)]
 pub struct Metadata {
     pub id: Uuid,
-
     pub data_object_id: Uuid,
 
     // Global Identifier
-    pub identifier: String, 
+    pub identifier: String,
 
-    /// Authorization Reference - Legal basis for mission activities
+    /// Authorization Reference - Legal basis for mission activities - 🔒 ENCRYPTED
     /// Examples: U.S. Law, DoD Policy, OPORD, FRAGO, MOU, Court Order
-    pub authorization_reference: Option<String>,
+    pub authorization_reference: Option<EncryptedString>,
     pub authorization_reference_date: Option<NaiveDateTime>,
-    
+
     /// Originator - Organization primarily responsible for generating the resource
     /// Should not change throughout data asset life cycle
-    #[graphql(skip)]
     pub originator_organization_id: Uuid, // References Authority
-    #[graphql(skip)]
     pub custodian_organization_id: Uuid, // References Authority
 
     /// Format - Physical attributes of data asset (e.g., email, JPEG, XML)
@@ -70,11 +66,76 @@ pub struct Metadata {
     pub updated_at: NaiveDateTime,
 }
 
-// GraphQL implementation
+/// GraphQL model with decrypted String fields
+#[derive(Debug, Clone, Serialize, Deserialize, SimpleObject)]
+#[graphql(complex)]
+pub struct MetadataGraphQL {
+    pub id: Uuid,
+    pub data_object_id: Uuid,
+
+    pub identifier: String,
+    pub authorization_reference: Option<String>, // Decrypted for GraphQL
+    pub authorization_reference_date: Option<NaiveDateTime>,
+
+    #[graphql(skip)]
+    pub originator_organization_id: Uuid,
+    #[graphql(skip)]
+    pub custodian_organization_id: Uuid,
+
+    pub format: String,
+    pub format_size: Option<i64>,
+
+    pub security_classification: String,
+    pub releasable_to_countries: Option<Vec<Option<String>>>,
+    pub releasable_to_organizations: Option<Vec<Option<String>>>,
+    pub releasable_to_categories: Option<Vec<Option<String>>>,
+    pub disclosure_category: Option<String>,
+
+    pub handling_restrictions: Option<Vec<Option<String>>>,
+    pub handling_authority: Option<String>,
+    pub no_handling_restrictions: Option<bool>,
+
+    pub domain: String,
+    pub tags: Vec<Option<String>>,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
+}
+
+// Convert database model to GraphQL model
+impl From<Metadata> for MetadataGraphQL {
+    fn from(meta: Metadata) -> Self {
+        Self {
+            id: meta.id,
+            data_object_id: meta.data_object_id,
+            identifier: meta.identifier,
+            authorization_reference: meta.authorization_reference.map(|e| e.into_string()),
+            authorization_reference_date: meta.authorization_reference_date,
+            originator_organization_id: meta.originator_organization_id,
+            custodian_organization_id: meta.custodian_organization_id,
+            format: meta.format,
+            format_size: meta.format_size,
+            security_classification: meta.security_classification,
+            releasable_to_countries: meta.releasable_to_countries,
+            releasable_to_organizations: meta.releasable_to_organizations,
+            releasable_to_categories: meta.releasable_to_categories,
+            disclosure_category: meta.disclosure_category,
+            handling_restrictions: meta.handling_restrictions,
+            handling_authority: meta.handling_authority,
+            no_handling_restrictions: meta.no_handling_restrictions,
+            domain: meta.domain,
+            tags: meta.tags,
+            created_at: meta.created_at,
+            updated_at: meta.updated_at,
+        }
+    }
+}
+
+// GraphQL implementation for complex fields
 #[ComplexObject]
-impl Metadata {
-    pub async fn data_object(&self) -> Result<DataObject> {
-        DataObject::get_by_id(&self.data_object_id)
+impl MetadataGraphQL {
+    pub async fn data_object(&self) -> Result<crate::models::data_object::DataObjectGraphQL> {
+        let db_obj = DataObject::get_by_id(&self.data_object_id)?;
+        Ok(db_obj.into())
     }
 
     pub async fn originating_organization(&self) -> Result<Authority> {
@@ -187,16 +248,16 @@ impl Metadata {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, Insertable, InputObject)]
+/// Database insertable model with encrypted fields
+#[derive(Debug, Clone, Insertable)]
 #[diesel(table_name = metadata)]
 pub struct NewMetadata {
-    
     pub data_object_id: Uuid,
     // Global Identifier
     pub identifier: String,
 
-    // Authorization Reference
-    pub authorization_reference: Option<String>,
+    // Authorization Reference - 🔒 ENCRYPTED
+    pub authorization_reference: Option<EncryptedString>,
     pub authorization_reference_date: Option<NaiveDateTime>,
 
     // Originator and Custodian
@@ -228,13 +289,14 @@ pub struct NewMetadata {
 
 /// A light struct to accept the JSON formatted Metadata included with
 /// a ConversionRequest
+/// GraphQL input type accepts plain String (will be encrypted internally)
 #[derive(Debug, Clone, Deserialize, Serialize, InputObject)]
 #[graphql(name = "MetadataInput")]
 pub struct InsertableMetadata {
     // Global Identifier
     pub identifier: String,
 
-    // Authorization Reference
+    // Authorization Reference - will be encrypted
     pub authorization_reference: Option<String>,
     pub authorization_reference_date: Option<NaiveDateTime>,
 
@@ -263,4 +325,30 @@ pub struct InsertableMetadata {
     // Legacy fields
     pub domain: String,
     pub tags: Vec<Option<String>>,
+}
+
+impl InsertableMetadata {
+    /// Convert to NewMetadata with encrypted fields
+    pub fn to_new_metadata(&self, data_object_id: Uuid) -> NewMetadata {
+        NewMetadata {
+            data_object_id,
+            identifier: self.identifier.clone(),
+            authorization_reference: self.authorization_reference.as_ref().map(|s| EncryptedString::from(s.clone())),
+            authorization_reference_date: self.authorization_reference_date,
+            originator_organization_id: self.originator_organization_id,
+            custodian_organization_id: self.custodian_organization_id,
+            format: self.format.clone(),
+            format_size: self.format_size,
+            security_classification: self.security_classification.clone(),
+            releasable_to_countries: self.releasable_to_countries.clone(),
+            releasable_to_organizations: self.releasable_to_organizations.clone(),
+            releasable_to_categories: self.releasable_to_categories.clone(),
+            disclosure_category: self.disclosure_category.clone(),
+            handling_restrictions: self.handling_restrictions.clone(),
+            handling_authority: self.handling_authority.clone(),
+            no_handling_restrictions: self.no_handling_restrictions,
+            domain: self.domain.clone(),
+            tags: self.tags.clone(),
+        }
+    }
 }

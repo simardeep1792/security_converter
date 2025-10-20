@@ -1,6 +1,6 @@
 use async_graphql::*;
 
-use crate::models::{DataObject, DomainCount, Metadata};
+use crate::models::{DataObject, DataObjectGraphQL, DomainCount, Metadata, MetadataGraphQL};
 use uuid::Uuid;
 
 //use crate::common_utils::{RoleGuard, is_admin, UserRole};
@@ -17,8 +17,9 @@ impl MetadataQuery {
     }
 
     /// Returns a metadata record by its Uuid
-    pub async fn metadata_by_id(&self, _context: &Context<'_>, id: Uuid) -> Result<Metadata> {
-        Metadata::get_by_id(&id)
+    pub async fn metadata_by_id(&self, _context: &Context<'_>, id: Uuid) -> Result<MetadataGraphQL> {
+        let meta = Metadata::get_by_id(&id)?;
+        Ok(meta.into())
     }
 
     /// Returns metadata by data object ID
@@ -28,8 +29,9 @@ impl MetadataQuery {
         &self,
         _context: &Context<'_>,
         data_object_id: Uuid,
-    ) -> Result<Metadata> {
-        Metadata::get_by_data_object_id(&data_object_id)
+    ) -> Result<MetadataGraphQL> {
+        let meta = Metadata::get_by_data_object_id(&data_object_id)?;
+        Ok(meta.into())
     }
 
     /// Returns all metadata records for a specific domain
@@ -44,8 +46,9 @@ impl MetadataQuery {
         &self,
         _context: &Context<'_>,
         domain: String,
-    ) -> Result<Vec<Metadata>> {
-        Metadata::get_by_domain(domain)
+    ) -> Result<Vec<MetadataGraphQL>> {
+        let metadata = Metadata::get_by_domain(domain)?;
+        Ok(metadata.into_iter().map(|m| m.into()).collect())
     }
 
     /// Returns all data object IDs that belong to a specific domain
@@ -66,14 +69,16 @@ impl MetadataQuery {
         &self,
         _context: &Context<'_>,
         domain: String,
-    ) -> Result<Vec<DataObject>> {
+    ) -> Result<Vec<DataObjectGraphQL>> {
         let data_object_ids = Metadata::get_data_object_ids_by_domain(domain)?;
-        DataObject::get_by_ids(data_object_ids)
+        let objects = DataObject::get_by_ids(data_object_ids)?;
+        Ok(objects.into_iter().map(|obj| obj.into()).collect())
     }
 
     /// Returns vector of all metadata records
-    pub async fn metadata(&self, _context: &Context<'_>) -> Result<Vec<Metadata>> {
-        Metadata::get_all()
+    pub async fn metadata(&self, _context: &Context<'_>) -> Result<Vec<MetadataGraphQL>> {
+        let metadata = Metadata::get_all()?;
+        Ok(metadata.into_iter().map(|m| m.into()).collect())
     }
 
     /// Returns a limited number of metadata records
@@ -81,9 +86,9 @@ impl MetadataQuery {
         &self,
         _context: &Context<'_>,
         count: i64,
-    ) -> Result<Vec<Metadata>> {
+    ) -> Result<Vec<MetadataGraphQL>> {
         let all_metadata = Metadata::get_all()?;
-        Ok(all_metadata.into_iter().take(count as usize).collect())
+        Ok(all_metadata.into_iter().take(count as usize).map(|m| m.into()).collect())
     }
 
     /// Returns count of metadata records grouped by domain

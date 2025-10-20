@@ -66,8 +66,9 @@ impl ConversionResponse {
     }
 
     /// Get the data object that was classified
-    pub async fn subject_data(&self) -> Result<DataObject> {
-        DataObject::get_by_id(&self.subject_data_id)
+    pub async fn subject_data(&self) -> Result<crate::models::data_object::DataObjectGraphQL> {
+        let obj = DataObject::get_by_id(&self.subject_data_id)?;
+        Ok(obj.into())
     }
 
     /// Get the target nation classifications as a HashMap

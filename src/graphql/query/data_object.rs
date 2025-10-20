@@ -1,6 +1,6 @@
 use async_graphql::*;
 
-use crate::models::{ConversionRequest, ConversionResponse, DataObject, Metadata};
+use crate::models::{ConversionRequest, ConversionResponse, DataObject, DataObjectGraphQL, Metadata};
 use uuid::Uuid;
 
 //use crate::common_utils::{RoleGuard, is_admin, UserRole};
@@ -17,8 +17,9 @@ impl DataObjectQuery {
     }
 
     /// Returns a data_object by its Uuid
-    pub async fn data_object_by_id(&self, _context: &Context<'_>, id: Uuid) -> Result<DataObject> {
-        DataObject::get_by_id(&id)
+    pub async fn data_object_by_id(&self, _context: &Context<'_>, id: Uuid) -> Result<DataObjectGraphQL> {
+        let obj = DataObject::get_by_id(&id)?;
+        Ok(obj.into())
     }
 
     /// Accepts a String "name" and returns a vector of data_objects that
@@ -27,8 +28,9 @@ impl DataObjectQuery {
         &self,
         _context: &Context<'_>,
         title: String,
-    ) -> Result<Vec<DataObject>> {
-        DataObject::get_by_title(&title)
+    ) -> Result<Vec<DataObjectGraphQL>> {
+        let objects = DataObject::get_by_title(&title)?;
+        Ok(objects.into_iter().map(|obj| obj.into()).collect())
     }
 
     /// Return a DataObjectCount by a specific DataObjectDomain (SCIENTIFIC, etc.)
@@ -36,10 +38,10 @@ impl DataObjectQuery {
         &self,
         _context: &Context<'_>,
         domain: String,
-    ) -> Result<Vec<DataObject>> {
+    ) -> Result<Vec<DataObjectGraphQL>> {
         let data_object_ids = Metadata::get_data_object_ids_by_domain(domain)?;
-
-        DataObject::get_by_ids(data_object_ids)
+        let objects = DataObject::get_by_ids(data_object_ids)?;
+        Ok(objects.into_iter().map(|obj| obj.into()).collect())
     }
 
     /// Returns all conversion requests associated with a specific data object
@@ -69,7 +71,8 @@ impl DataObjectQuery {
     // DataObjects
 
     /// Returns vector of all data_objects
-    pub async fn data_objects(&self, _context: &Context<'_>) -> Result<Vec<DataObject>> {
-        DataObject::get_all()
+    pub async fn data_objects(&self, _context: &Context<'_>) -> Result<Vec<DataObjectGraphQL>> {
+        let objects = DataObject::get_all()?;
+        Ok(objects.into_iter().map(|obj| obj.into()).collect())
     }
 }

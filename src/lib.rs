@@ -27,6 +27,7 @@ pub mod graphql;
 pub mod common_utils;
 pub mod config_variables;
 pub mod errors;
+pub mod encryption;
 //pub mod kafka;
 
 pub struct AppData {
