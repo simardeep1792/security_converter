@@ -14,7 +14,9 @@ use crate::database::connection;
 
 use crate::{database, schema::*};
 
-use crate::models::{Authority, ClassificationSchema, ConversionResponse, DataObject, InsertableConversionResponse, InsertableDataObject, InsertableMetadata, Metadata, NewDataObject, NewMetadata, User};
+use crate::models::{Authority, ClassificationSchema, ConversionResponse,
+    DataObject, InsertableConversionResponse, InsertableDataObject, InsertableMetadata, 
+    Metadata, User};
 use std::collections::HashMap;
 
 #[derive(
