@@ -33,7 +33,7 @@ echo "🛡️ Creating Firewall Rules..."
 gcloud compute firewall-rules create allow-internal-$VPC_NAME \
     --network=$VPC_NAME \
     --allow=tcp,udp,icmp \
-    --source-ranges=10.0.0.0/8
+    --source-ranges=10.0.0.0/20,10.4.0.0/14,10.8.0.0/20
 
 gcloud compute firewall-rules create allow-health-checks-$VPC_NAME \
     --network=$VPC_NAME \

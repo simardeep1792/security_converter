@@ -17,13 +17,16 @@ echo "📋 Verifying cluster status..."
 kubectl cluster-info
 kubectl get nodes
 
-echo "🗄️ Step 1: Deploying PostgreSQL Database..."
+echo "🔐 Step 1: Creating Secrets..."
+kubectl apply -f k8s-manifests/secrets.yaml
+
+echo "🗄️ Step 2: Deploying PostgreSQL Database..."
 kubectl apply -f k8s-manifests/postgres.yaml
 
 echo "⏳ Waiting for PostgreSQL to be ready..."
 kubectl wait --for=condition=ready pod -l app=postgres --timeout=300s
 
-echo "🔧 Step 2: Deploying Security Converter API..."
+echo "🔧 Step 3: Deploying Security Converter API..."
 # Update the image URI in api.yaml before applying
 IMAGE_URI="$REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$IMAGE_NAME:latest"
 sed "s|northamerica-northeast1-docker.pkg.dev/admds-edip-datasandbox/security-converter-repo/security-converter:latest|$IMAGE_URI|g" k8s-manifests/api.yaml | kubectl apply -f -
@@ -31,7 +34,7 @@ sed "s|northamerica-northeast1-docker.pkg.dev/admds-edip-datasandbox/security-co
 echo "⏳ Waiting for API to be ready..."
 kubectl wait --for=condition=ready pod -l app=api --timeout=600s
 
-echo "🌐 Step 3: Setting up Internal Load Balancer..."
+echo "🌐 Step 4: Setting up Internal Load Balancer..."
 kubectl apply -f k8s-manifests/ingress-internal.yaml
 
 echo "⏳ Waiting for ingress to get internal IP..."
