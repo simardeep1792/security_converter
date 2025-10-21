@@ -1,0 +1,37 @@
+# INTERNAL Ingress for DND Environment
+# Creates INTERNAL load balancer (no external IP) - DND compliant
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-ingress-internal
+  annotations:
+    # CRITICAL: This annotation creates INTERNAL load balancer (no external IP)
+    kubernetes.io/ingress.class: "gce-internal"
+    # Alternative annotation for newer GKE versions:
+    # kubernetes.io/ingress.class: "gce"
+    # cloud.google.com/load-balancer-type: "Internal"
+    
+    # Optional: Specify which subnet to use for internal LB
+    # cloud.google.com/backend-config: '{"default": "api-backend-config"}'
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /*
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: api-service
+                port:
+                  name: http
+---
+# Optional: Backend configuration for additional security
+# apiVersion: cloud.google.com/v1
+# kind: BackendConfig
+# metadata:
+#   name: api-backend-config
+# spec:
+#   timeoutSec: 30
+#   connectionDraining:
+#     drainingTimeoutSec: 60
