@@ -6,38 +6,38 @@
 set -e
 source config.env
 
-echo "🚀 DEPLOYING TO PRIVATE AUTOPILOT GKE CLUSTER"
+echo "DEPLOYING TO PRIVATE AUTOPILOT GKE CLUSTER"
 echo "Cluster: $CLUSTER_NAME"
 echo "Project: $PROJECT_ID"
 
 # Ensure we're connected to the right cluster
 gcloud container clusters get-credentials $CLUSTER_NAME --region=$REGION
 
-echo "📋 Verifying cluster status..."
+echo "Verifying cluster status..."
 kubectl cluster-info
 kubectl get nodes
 
-echo "🔐 Step 1: Creating Secrets..."
+echo "Step 1: Creating Secrets..."
 kubectl apply -f k8s-manifests/secrets.yaml
 
-echo "🗄️ Step 2: Deploying PostgreSQL Database..."
+echo "Step 2: Deploying PostgreSQL Database..."
 kubectl apply -f k8s-manifests/postgres.yaml
 
-echo "⏳ Waiting for PostgreSQL to be ready..."
+echo "Waiting for PostgreSQL to be ready..."
 kubectl wait --for=condition=ready pod -l app=postgres --timeout=300s
 
-echo "🔧 Step 3: Deploying Security Converter API..."
+echo "Step 3: Deploying Security Converter API..."
 # Update the image URI in api.yaml before applying
 IMAGE_URI="$REGION-docker.pkg.dev/$PROJECT_ID/$REGISTRY_NAME/$IMAGE_NAME:latest"
 sed "s|northamerica-northeast1-docker.pkg.dev/admds-edip-datasandbox/security-converter-repo/security-converter:latest|$IMAGE_URI|g" k8s-manifests/api.yaml | kubectl apply -f -
 
-echo "⏳ Waiting for API to be ready..."
+echo "Waiting for API to be ready..."
 kubectl wait --for=condition=ready pod -l app=api --timeout=600s
 
-echo "🌐 Step 4: Setting up Internal Load Balancer..."
+echo "Step 4: Setting up Internal Load Balancer..."
 kubectl apply -f k8s-manifests/ingress-internal.yaml
 
-echo "⏳ Waiting for ingress to get internal IP..."
+echo "Waiting for ingress to get internal IP..."
 echo "This may take 5-10 minutes..."
 
 # Wait for ingress to get an IP address
@@ -51,32 +51,32 @@ for i in {1..60}; do
 done
 
 echo ""
-echo "🎉 DEPLOYMENT COMPLETE!"
-echo "✅ PostgreSQL: Running"
-echo "✅ API: Running" 
-echo "✅ Internal Load Balancer: Created"
-echo "✅ Autopilot Cluster: Auto-scaling enabled"
+echo "DEPLOYMENT COMPLETE!"
+echo "PostgreSQL: Running"
+echo "API: Running" 
+echo "Internal Load Balancer: Created"
+echo "Autopilot Cluster: Auto-scaling enabled"
 
 if [ ! -z "$INTERNAL_IP" ]; then
-    echo "🔗 Internal IP: $INTERNAL_IP"
-    echo "🔗 Internal URL: http://$INTERNAL_IP"
-    echo "🔗 GraphQL Endpoint: http://$INTERNAL_IP/graphql"
+    echo "Internal IP: $INTERNAL_IP"
+    echo "Internal URL: http://$INTERNAL_IP"
+    echo "GraphQL Endpoint: http://$INTERNAL_IP/graphql"
 else
-    echo "⚠️  Internal IP not ready yet. Check with:"
+    echo "Internal IP not ready yet. Check with:"
     echo "   kubectl get ingress api-ingress-internal"
 fi
 
 echo ""
-echo "📊 Verification Commands:"
+echo "Verification Commands:"
 echo "kubectl get pods"
 echo "kubectl get services"  
 echo "kubectl get ingress"
 echo "kubectl logs -l app=api"
 
 echo ""
-echo "🔒 DND COMPLIANCE:"
-echo "✅ Autopilot cluster (managed by Google)"
-echo "✅ No external IPs on nodes"
-echo "✅ Internal load balancer only"
-echo "✅ Private container registry"
-echo "✅ VPC-native networking"
+echo "DND COMPLIANCE:"
+echo "Autopilot cluster (managed by Google)"
+echo "No external IPs on nodes"
+echo "Internal load balancer only"
+echo "Private container registry"
+echo "VPC-native networking"
