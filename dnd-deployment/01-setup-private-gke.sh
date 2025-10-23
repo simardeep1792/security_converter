@@ -184,7 +184,6 @@ else
         --enable-private-nodes \
         --enable-private-endpoint \
         --master-ipv4-cidr=$MASTER_CIDR \
-        --enable-ip-alias \
         --release-channel=regular \
         --quiet"
     
