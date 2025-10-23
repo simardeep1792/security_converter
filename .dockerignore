@@ -9,3 +9,5 @@ bin/
 .vscode/
 .devcontainer/
 *.ipynb
+*.pdf
+documentation/

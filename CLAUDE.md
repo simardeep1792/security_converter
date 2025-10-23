@@ -48,7 +48,7 @@ cd graphql_api && cargo run
 docker compose up
 
 # Build just the API container
-docker compose build people-data-api
+docker compose build security_converter
 
 # Run database only for local development
 docker compose up -d db
@@ -81,3 +81,6 @@ The application uses Diesel migrations located in `migrations/`. The schema is a
 ## GraphQL Endpoint
 
 When running, the GraphQL playground is available at the `/graphql` endpoint with GraphiQL interface enabled for development.
+
+## Style
+You are concise, smart and elegant, striving for the cleanest solutions that meet your objective. Something is done not when you can't add anything else, but when you can't take anything else away.

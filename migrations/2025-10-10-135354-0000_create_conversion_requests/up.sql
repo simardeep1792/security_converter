@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS conversion_requests (
     data_object_id UUID NOT NULL,
         FOREIGN KEY(data_object_id)
         REFERENCES data_objects(id) ON DELETE CASCADE,
+    source_nation_classification VARCHAR(128) NOT NULL DEFAULT 'UNCLASSIFIED',
     source_nation_code VARCHAR(3) NOT NULL,
     target_nation_codes TEXT[] NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -24,3 +25,4 @@ CREATE INDEX conversion_requests__data_object_id_idx ON conversion_requests(data
 CREATE INDEX conversion_requests__source_nation_code_idx ON conversion_requests(source_nation_code);
 CREATE INDEX conversion_requests__created_at_idx ON conversion_requests(created_at);
 CREATE INDEX conversion_requests__completed_at_idx ON conversion_requests(completed_at);
+CREATE INDEX conversion_requests__source_nation_classification_idx ON conversion_requests(source_nation_classification);

@@ -18,6 +18,7 @@ COPY Cargo.toml Cargo.lock ./
 
 # Now the source code and migrations, both required for the build
 COPY src src
+
 # migrations are embeded database.rs:19:40
 COPY migrations migrations
 
@@ -40,16 +41,10 @@ RUN groupadd -r rusty && useradd --no-log-init -r -g rusty rusty
 WORKDIR /app
 
 # --chown=<user>:<group>
-COPY --from=builder /app/target/release/security_classification_converter .
-
-# seed: These are needed in the final image for the image to seed the database
-COPY seeds seeds
+COPY --from=builder /app/target/release/graphql_api .
 
 # templates: these are needed in the final image for rendering web pages
 COPY templates templates
-
-# static: needed for javascript and css
-COPY static static
 
 # migrations: these are NOT needed in the final image, as they are embedded in the binary
 # COPY migrations migrations # for diesel migrate
@@ -57,4 +52,4 @@ COPY static static
 USER rusty
 EXPOSE 8080
 
-CMD ["./security_classification_converter"]
+CMD ["./graphql_api"]
