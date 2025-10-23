@@ -189,7 +189,7 @@ else
     
     # Add authorized networks if specified
     if [ -n "$AUTHORIZED_NETWORKS" ]; then
-        CLUSTER_CMD="$CLUSTER_CMD --master-authorized-networks=$AUTHORIZED_NETWORKS"
+        CLUSTER_CMD="$CLUSTER_CMD --enable-master-authorized-networks --master-authorized-networks=$AUTHORIZED_NETWORKS"
     fi
     
     eval "$CLUSTER_CMD"
