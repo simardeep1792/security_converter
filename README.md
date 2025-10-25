@@ -29,6 +29,14 @@ It also includes :
   - ADMIN_EMAIL=some_admin@email.com 
   - ADMIN_PASSWORD=ADMINPASSWORD
   - ADMIN_NAME="Admin Name"
+- Generate a secure 256-bit encryption key:
+
+```bash
+# Generate a random 32-byte key and encode as base64
+openssl rand -base64 32
+```
+
+- Add to your `.env` file: ENCRYPTION_MASTER_KEY=your_generated_key_here
 - Change APP_NAME const in lib.rs to your app
 - `diesel migration run`
 - `cargo run`

@@ -50,7 +50,7 @@ const KEY_SIZE: usize = 32;
 /// Size of GCM nonce in bytes
 const NONCE_SIZE: usize = 12;
 
-/// Thread-local encryption cipher instance
+// Thread-local encryption cipher instance
 thread_local! {
     static CIPHER: Aes256Gcm = {
         let key = get_encryption_key();
