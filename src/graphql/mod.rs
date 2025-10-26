@@ -1,4 +1,4 @@
-mod query;
+pub mod query;
 mod mutation;
 mod utilities;
 mod audit_extension;
