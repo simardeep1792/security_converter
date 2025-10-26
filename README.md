@@ -2,11 +2,13 @@
 
 This app is an proof of concept for GraphQL API middeware designed to provide an auditable trail of security classification conversions from any NATO nation to another, using the NATO standard as a Rosetta Stone.
 
-- [ ] A data model for security classifications
-- [ ] A model for tagging documents or data packages with unique IDs (blockchain implementation?)
-- [ ] A return function that accepts a data object from any nation with their security classifcation and a target ally nation that returns a validated UUID, equivalent classification response and an auditable log of the transaction
+- [x] A data model for security classifications
+- [x] A model for tagging documents or data packages with unique IDs (blockchain implementation?)
+- [x] A return function that accepts a data object from any nation with their security classifcation and a target ally nation that returns a validated UUID, equivalent classification response and an auditable log of the transaction
 - [ ] A model for community of interest and management tools to allow the creation of specialized groups for data and information access
-- [ ] A Rust-based Web server designed for simplicity and speed
+- [x] A Rust-based Web server designed for simplicity and speed
+- [x] A logging function for auditability and security
+- [x] Role-based access and encryption at rest of sensitive fields
 
 It also includes :
 

@@ -2,6 +2,7 @@ mod access_log;
 mod auth;
 mod messages;
 mod user;
+mod graphql_audit_log;
 
 // App
 mod authority;
@@ -16,6 +17,7 @@ pub use self::access_log::*;
 pub use self::user::*;
 //pub use messages::*;
 pub use auth::*;
+pub use graphql_audit_log::*;
 
 // App
 pub use authority::*;

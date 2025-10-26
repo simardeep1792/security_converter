@@ -1,4 +1,5 @@
 mod authority;
+mod audit_log_query;
 mod classification_schema;
 mod conversion_request;
 mod conversion_response;
@@ -9,6 +10,7 @@ mod query;
 mod user_query;
 
 pub use self::authority::*;
+pub use self::audit_log_query::*;
 pub use self::classification_schema::*;
 pub use self::conversion_request::*;
 pub use self::conversion_response::*;

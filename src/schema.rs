@@ -1,5 +1,11 @@
 // @generated automatically by Diesel CLI.
 
+pub mod sql_types {
+    #[derive(diesel::query_builder::QueryId, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "graphql_operation_type"))]
+    pub struct GraphqlOperationType;
+}
+
 diesel::table! {
     authorities (id) {
         id -> Uuid,
@@ -97,6 +103,43 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::GraphqlOperationType;
+
+    graphql_audit_logs (id) {
+        id -> Uuid,
+        user_id -> Nullable<Uuid>,
+        #[max_length = 64]
+        user_role -> Nullable<Varchar>,
+        #[max_length = 64]
+        user_access_level -> Nullable<Varchar>,
+        authority_id -> Nullable<Uuid>,
+        #[max_length = 3]
+        nation_code -> Nullable<Varchar>,
+        operation_type -> GraphqlOperationType,
+        #[max_length = 256]
+        operation_name -> Nullable<Varchar>,
+        query_text -> Text,
+        variables_json -> Nullable<Jsonb>,
+        request_id -> Nullable<Uuid>,
+        #[max_length = 45]
+        client_ip -> Nullable<Varchar>,
+        user_agent -> Nullable<Text>,
+        execution_time_ms -> Nullable<Int4>,
+        #[max_length = 32]
+        response_status -> Varchar,
+        error_message -> Nullable<Text>,
+        errors_json -> Nullable<Jsonb>,
+        accessed_data_objects -> Nullable<Array<Nullable<Uuid>>>,
+        accessed_classifications -> Nullable<Array<Nullable<Text>>>,
+        executed_at -> Timestamp,
+        #[max_length = 256]
+        session_id -> Nullable<Varchar>,
+        request_headers -> Nullable<Jsonb>,
+    }
+}
+
+diesel::table! {
     metadata (id) {
         id -> Uuid,
         data_object_id -> Uuid,
@@ -180,6 +223,8 @@ diesel::joinable!(conversion_requests -> users (creator_id));
 diesel::joinable!(conversion_responses -> conversion_requests (conversion_request_id));
 diesel::joinable!(conversion_responses -> data_objects (subject_data_id));
 diesel::joinable!(data_objects -> users (creator_id));
+diesel::joinable!(graphql_audit_logs -> authorities (authority_id));
+diesel::joinable!(graphql_audit_logs -> users (user_id));
 diesel::joinable!(metadata -> data_objects (data_object_id));
 diesel::joinable!(nations -> users (creator_id));
 diesel::joinable!(users -> valid_roles (role));
@@ -190,6 +235,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     conversion_requests,
     conversion_responses,
     data_objects,
+    graphql_audit_logs,
     metadata,
     nations,
     users,

@@ -125,6 +125,8 @@ impl ConversionRequest {
         let new_data_object = insertable_data_object.to_new_data_object(payload.user_id);
         let data_object = DataObject::create(&new_data_object)?;
 
+        // TODO: Handle if data object already exists
+
         // Step 2: Create the Metadata with the generated DataObject ID
         let insertable_metadata = InsertableMetadata {
 

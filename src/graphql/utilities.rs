@@ -47,6 +47,8 @@ pub fn create_schema_with_context(pg_pool: PostgresPool) -> async_graphql::Schem
         // Kafka
         // .data(create_producer())
         .data(kafka_consumer_counter)
+        // Add audit logging extension for security and analytics
+        .extension(crate::graphql::AuditLogExtension)
         .finish()
 }
 
