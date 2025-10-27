@@ -54,8 +54,10 @@ impl From<DataObject> for DataObjectGraphQL {
 // GraphQL implementation for complex fields
 #[ComplexObject]
 impl DataObjectGraphQL {
-    pub async fn creator(&self) -> Result<User> {
-        User::get_by_id(&self.creator_id)
+    pub async fn creator(&self, ctx: &Context<'_>) -> Result<User> {
+        let loaders = ctx.data::<crate::graphql::Loaders>()?;
+        let user = loaders.user_loader.load(self.creator_id).await;
+        Ok(user)
     }
 
     pub async fn metadata(&self) -> Result<crate::models::metadata::MetadataGraphQL> {

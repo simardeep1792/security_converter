@@ -72,19 +72,24 @@ pub struct InsertableConversionRequest {
 #[ComplexObject]
 impl ConversionRequest {
     /// Get the user who created this conversion request
-    pub async fn creator(&self) -> Result<User> {
-        User::get_by_id(&self.creator_id)
+    pub async fn creator(&self, ctx: &Context<'_>) -> Result<User> {
+        let loaders = ctx.data::<crate::graphql::Loaders>()?;
+        let user = loaders.user_loader.load(self.creator_id).await;
+        Ok(user)
     }
 
     /// Get the authority that is requesting this conversion
-    pub async fn authority(&self) -> Result<Authority> {
-        Authority::get_by_id(&self.authority_id)
+    pub async fn authority(&self, ctx: &Context<'_>) -> Result<Authority> {
+        let loaders = ctx.data::<crate::graphql::Loaders>()?;
+        let authority = loaders.authority_loader.load(self.authority_id).await;
+        Ok(authority)
     }
 
     /// Get the data object that is being converted
-    pub async fn data_object(&self) -> Result<crate::models::data_object::DataObjectGraphQL> {
-        let obj = DataObject::get_by_id(&self.data_object_id)?;
-        Ok(obj.into())
+    pub async fn data_object(&self, ctx: &Context<'_>) -> Result<crate::models::data_object::DataObjectGraphQL> {
+        let loaders = ctx.data::<crate::graphql::Loaders>()?;
+        let obj = loaders.data_object_loader.load(self.data_object_id).await;
+        Ok(obj)
     }
 
     /// Get the metadata for the data object
@@ -93,6 +98,7 @@ impl ConversionRequest {
         Ok(meta.into())
     }
 
+    // Gets a conversion_response by request ID
     pub async fn conversion_response(&self) -> Result<ConversionResponse> {
         ConversionResponse::get_by_conversion_request_id(&self.id)
     }

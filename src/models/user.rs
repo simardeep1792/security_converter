@@ -73,6 +73,16 @@ impl User {
         Ok(user)
     }
 
+    /// Batch load users by multiple IDs (for DataLoader)
+    pub fn get_by_ids(ids: Vec<Uuid>) -> Result<Vec<Self>> {
+        let mut conn = connection()?;
+        let users = users::table
+            .filter(users::id.eq_any(ids))
+            .load::<User>(&mut conn)?;
+
+        Ok(users)
+    }
+
     pub fn get_by_email(email: &String) -> Result<Self> {
         let mut conn = connection()?;
         let user = users::table

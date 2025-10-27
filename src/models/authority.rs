@@ -31,8 +31,10 @@ pub struct Authority {
 
 #[ComplexObject]
 impl Authority {
-    pub async fn creator(&self) -> Result<User> {
-        User::get_by_id(&self.creator_id)
+    pub async fn creator(&self, ctx: &Context<'_>) -> Result<User> {
+        let loaders = ctx.data::<crate::graphql::Loaders>()?;
+        let user = loaders.user_loader.load(self.creator_id).await;
+        Ok(user)
     }
 
     pub async fn nation(&self) -> Result<Nation> {
@@ -83,6 +85,15 @@ impl Authority {
         let res = authorities::table
             .filter(authorities::id.eq(id))
             .first(&mut conn)?;
+        Ok(res)
+    }
+
+    /// Batch load authorities by multiple IDs (for DataLoader)
+    pub fn get_by_ids(ids: Vec<Uuid>) -> Result<Vec<Self>> {
+        let mut conn = database::connection()?;
+        let res = authorities::table
+            .filter(authorities::id.eq_any(ids))
+            .load::<Authority>(&mut conn)?;
         Ok(res)
     }
 

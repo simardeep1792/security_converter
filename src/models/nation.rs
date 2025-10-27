@@ -28,8 +28,10 @@ pub struct Nation {
 // GraphQL implementation
 #[ComplexObject]
 impl Nation {
-    pub async fn creator(&self) -> Result<User> {
-        User::get_by_id(&self.creator_id)
+    pub async fn creator(&self, ctx: &Context<'_>) -> Result<User> {
+        let loaders = ctx.data::<crate::graphql::Loaders>()?;
+        let user = loaders.user_loader.load(self.creator_id).await;
+        Ok(user)
     }
 
     pub async fn authorities(&self) -> Result<Vec<Authority>> {
