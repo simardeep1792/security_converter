@@ -1,0 +1,317 @@
+# NATO Security Classification Converter - GraphQL Schema
+# Generated from API introspection
+
+# ============================================================================
+# SCALARS
+# ============================================================================
+
+scalar UUID
+scalar NaiveDateTime
+
+# ============================================================================
+# TYPES
+# ============================================================================
+
+type Authority {
+  id: UUID!
+  creatorId: UUID!
+  nationId: UUID!
+  name: String!
+  email: String!
+  phone: String!
+  createdAt: NaiveDateTime!
+  updatedAt: NaiveDateTime!
+  expiresAt: NaiveDateTime
+  creator: User!
+  nation: Nation!
+}
+
+type ClassificationSchema {
+  id: UUID!
+  creatorId: UUID!
+  nationCode: String!
+  toNatoUnclassified: String!
+  toNatoRestricted: String!
+  toNatoConfidential: String!
+  toNatoSecret: String!
+  toNatoTopSecret: String!
+  fromNatoUnclassified: String!
+  fromNatoRestricted: String!
+  fromNatoConfidential: String!
+  fromNatoSecret: String!
+  fromNatoTopSecret: String!
+  caveats: String!
+  version: String!
+  authorityId: UUID!
+  createdAt: NaiveDateTime!
+  updatedAt: NaiveDateTime!
+  expiresAt: NaiveDateTime
+  creator: User!
+  authority: Authority!
+  nation: Nation!
+}
+
+type ConversionRequest {
+  id: UUID!
+  creatorId: UUID!
+  authorityId: UUID!
+  dataObjectId: UUID!
+  sourceNationCode: String!
+  targetNationCodes: [String]!
+  createdAt: NaiveDateTime!
+  updatedAt: NaiveDateTime!
+  completedAt: NaiveDateTime
+  creator: User!
+  authority: Authority!
+  dataObject: DataObject!
+}
+
+type DataObject {
+  id: UUID!
+  creatorId: UUID!
+  title: String!
+  description: String!
+  createdAt: NaiveDateTime!
+  updatedAt: NaiveDateTime!
+  creator: User!
+  metadata: Metadata!
+}
+
+type DataObjectCount {
+  domain: String!
+  count: Int!
+}
+
+type Metadata {
+  id: UUID!
+  dataObjectId: UUID!
+  domain: String!
+  tags: [String]!
+  createdAt: NaiveDateTime!
+  updatedAt: NaiveDateTime!
+}
+
+type Nation {
+  id: UUID!
+  creatorId: UUID!
+  nationCode: String!
+  nationName: String!
+  createdAt: NaiveDateTime!
+  updatedAt: NaiveDateTime!
+  creator: User!
+  """List of authorities belonging to this nation"""
+  authorities: [Authority!]!
+}
+
+type User {
+  """Access Level: Admin"""
+  id: UUID!
+  """Access Level: Admin"""
+  email: String!
+  role: String!
+  """Access Level: Admin"""
+  name: String!
+  accessLevel: String!
+  createdAt: NaiveDateTime!
+  """Access Level: Admin"""
+  updatedAt: NaiveDateTime!
+  """Access Level: Admin"""
+  accessKey: String!
+  """Access Level: Admin"""
+  approvedByUserUid: UUID
+}
+
+type UserResponse {
+  bearer: String!
+  role: String!
+  email: String!
+}
+
+# ============================================================================
+# INPUT TYPES
+# ============================================================================
+
+input AuthorityUpdate {
+  name: String
+  email: String
+  phone: String
+  expiresAt: NaiveDateTime
+}
+
+input LoginQuery {
+  email: String!
+  password: String!
+}
+
+input NewAuthority {
+  creatorId: UUID!
+  nationId: UUID!
+  name: String!
+  email: String!
+  phone: String!
+  expiresAt: NaiveDateTime
+}
+
+"""Input Struct to create a new user. Only accessible by Administrators."""
+input UserData {
+  name: String!
+  email: String!
+  password: String!
+  """UserRole in system: USER, OPERATOR, ANALYST, ADMIN"""
+  role: String!
+}
+
+"""Input Struct to create a new user. Only accessible by Administrators."""
+input UserUpdate {
+  id: UUID!
+  name: String
+  email: String
+  password: String
+  """UserRole in system: USER, OPERATOR, ANALYST, ADMIN"""
+  role: String
+}
+
+"""Input for submitting a new conversion request"""
+input SubmitConversionRequestInput {
+  """The authority ID requesting the conversion"""
+  authorityId: UUID!
+  """Title of the data object being classified"""
+  dataObjectTitle: String!
+  """Description of the data object"""
+  dataObjectDescription: String!
+  """Metadata domain (e.g., SCIENTIFIC, MILITARY, DIPLOMATIC)"""
+  metadataDomain: String!
+  """Tags for the metadata"""
+  metadataTags: [String!]!
+  """Source nation code (e.g., "USA", "CAN", "GBR")"""
+  sourceNationCode: String!
+  """Target nation codes for conversion"""
+  targetNationCodes: [String!]!
+}
+
+# ============================================================================
+# QUERIES
+# ============================================================================
+
+type Query {
+  # User Queries
+  """Returns a vector of all users"""
+  allUsers: [User!]!
+  """Returns a user by email"""
+  userByEmail(email: String!): User!
+  """Returns a user by ID"""
+  userById(id: UUID!): User!
+
+  # DataObject Queries
+  """Returns count of DataObjects in the system"""
+  dataObjectCount: Int!
+  """Returns a data_object by its Uuid"""
+  dataObjectById(id: UUID!): DataObject!
+  """Accepts a String \"name\" and returns a vector of data_objects that match against it"""
+  dataObjectsByTitle(title: String!): [DataObject!]!
+  """Return a DataObjectCount by a specific DataObjectDomain (SCIENTIFIC, etc.)"""
+  dataObjectCountsByMetadataDomain(domain: String!): [DataObjectCount!]!
+  """Returns vector of all data_objects"""
+  dataObjects: [DataObject!]!
+
+  # Nation Queries
+  """Returns count of Nations in the system"""
+  nationCount: Int!
+  """Returns a nation by its Uuid"""
+  nationById(id: UUID!): Nation!
+  """Returns a nation by its nation code"""
+  nationByCode(nationCode: String!): Nation!
+  """Returns nations by creator ID"""
+  nationsByCreatorId(creatorId: UUID!): [Nation!]!
+  """Returns vector of all nations"""
+  nations: [Nation!]!
+
+  # Authority Queries
+  """Returns count of Authorities in the system"""
+  authorityCount: Int!
+  """Returns an authority by its Uuid"""
+  authorityById(id: UUID!): Authority!
+  """Returns authorities by creator ID"""
+  authoritiesByCreatorId(creatorId: UUID!): [Authority!]!
+  """Returns authorities by nation code"""
+  authoritiesByNationCode(nationCode: String!): [Authority!]!
+  """Returns vector of all authorities"""
+  authorities: [Authority!]!
+
+  # ClassificationSchema Queries
+  """Returns count of ClassificationSchemas in the system"""
+  classificationSchemaCount: Int!
+  """Returns a classification schema by its Uuid"""
+  classificationSchemaById(id: UUID!): ClassificationSchema!
+  """Returns classification schemas by creator ID"""
+  classificationSchemasByCreatorId(creatorId: UUID!): [ClassificationSchema!]!
+  """Returns classification schemas by nation code"""
+  classificationSchemasByNationCode(nationCode: String!): [ClassificationSchema!]!
+  """Returns a specific classification schema by nation code and version"""
+  classificationSchemaByNationCodeAndVersion(nationCode: String!, version: String!): ClassificationSchema!
+  """Returns classification schemas by authority ID"""
+  classificationSchemasByAuthorityId(authorityId: UUID!): [ClassificationSchema!]!
+  """Returns the latest classification schema for a given nation code"""
+  classificationSchemaLatestByNationCode(nationCode: String!): ClassificationSchema!
+  """Returns vector of all classification schemas"""
+  classificationSchemas: [ClassificationSchema!]!
+
+  # ConversionRequest Queries
+  """Returns count of ConversionRequests in the system"""
+  conversionRequestCount: Int!
+  """Returns a conversion request by its Uuid"""
+  conversionRequestById(id: UUID!): ConversionRequest!
+  """Returns conversion requests by creator ID"""
+  conversionRequestsByCreatorId(creatorId: UUID!): [ConversionRequest!]!
+  """Returns conversion requests by authority ID"""
+  conversionRequestsByAuthorityId(authorityId: UUID!): [ConversionRequest!]!
+  """Returns conversion requests by data object ID"""
+  conversionRequestsByDataObjectId(dataObjectId: UUID!): [ConversionRequest!]!
+  """Returns conversion requests by source nation code"""
+  conversionRequestsBySourceNationCode(nationCode: String!): [ConversionRequest!]!
+  """Returns all pending (not completed) conversion requests"""
+  conversionRequestsPending: [ConversionRequest!]!
+  """Returns all completed conversion requests"""
+  conversionRequestsCompleted: [ConversionRequest!]!
+  """Returns vector of all conversion requests"""
+  conversionRequests: [ConversionRequest!]!
+  """Returns a limited number of conversion requests"""
+  conversionRequestsCount(count: Int!): [ConversionRequest!]!
+}
+
+# ============================================================================
+# MUTATIONS
+# ============================================================================
+
+type Mutation {
+  # User Mutations
+  """Creates a new user. Requires admin role."""
+  createUser(userData: UserData!): User!
+  """Updates an existing user. Requires admin role."""
+  updateUser(userData: UserUpdate!): User!
+  """Sign in with email and password. Returns JWT bearer token."""
+  signIn(input: LoginQuery!): UserResponse!
+
+  # Authority Mutations
+  """Creates a new authority. Requires admin role."""
+  createAuthority(authorityData: NewAuthority!): Authority!
+  """Updates an existing authority. Requires admin role."""
+  updateAuthority(id: UUID!, authorityData: AuthorityUpdate!): Authority!
+
+  # ConversionRequest Mutations
+  """Submit a new conversion request. Requires operator role or higher."""
+  submitConversionRequest(input: SubmitConversionRequestInput!): ConversionRequest!
+  """Mark a conversion request as completed. Requires operator role or higher."""
+  markConversionRequestCompleted(id: UUID!): ConversionRequest!
+  """Delete a conversion request. Requires admin role."""
+  deleteConversionRequest(id: UUID!): Boolean!
+}
+
+# ============================================================================
+# SCHEMA
+# ============================================================================
+
+schema {
+  query: Query
+  mutation: Mutation
+}

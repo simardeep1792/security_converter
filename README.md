@@ -1,113 +1,275 @@
-# BASE STARTER FOR RUST-GRAPHQL-POSTGRES API (Security clearance converter)
+# NATO Security Classification Converter API
 
-This app is an proof of concept for GraphQL API middeware designed to provide an auditable trail of security classification conversions from any NATO nation to another, using the NATO standard as a Rosetta Stone.
+A Rust-based GraphQL API middleware designed to provide an auditable trail for security classification conversions between NATO nations, using the NATO standard as a "Rosetta Stone".
 
-- [ ] A data model for security classifications
-- [ ] A model for tagging documents or data packages with unique IDs (blockchain implementation?)
-- [ ] A return function that accepts a data object from any nation with their security classifcation and a target ally nation that returns a validated UUID, equivalent classification response and an auditable log of the transaction
-- [ ] A model for community of interest and management tools to allow the creation of specialized groups for data and information access
-- [ ] A Rust-based Web server designed for simplicity and speed
+## Features
 
-It also includes :
+### Implemented
+- [x] User models with role-based access control
+- [x] Automated Admin Generation on first startup
+- [x] JWT-based Authentication and sign-in
+- [x] Nation and Authority management
+- [x] Classification Schema definitions per nation
+- [x] Data Object tagging with unique UUIDs
+- [x] Conversion Request tracking with audit trail
+- [x] GraphQL API with GraphiQL playground
+- [x] Docker containerization with multi-stage builds
+- [x] GCP deployment support (with IAP tunneling)
 
-- [x] User models
-- [x] Automated Admin Generation
-- [x] Authentication and sign-in
+### Planned
+- [ ] Blockchain implementation for document tagging
+- [ ] Community of Interest management tools
+- [ ] Enhanced audit logging
 
-## Dependencies
+## Architecture
 
-- Diesel-cli
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Frontend      │────▶│  GraphQL API    │────▶│   PostgreSQL    │
+│   (Optional)    │     │  (Rust/Actix)   │     │   Database      │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+                              │
+                              ▼
+                        ┌─────────────────┐
+                        │  Classification │
+                        │  Schema Engine  │
+                        └─────────────────┘
+```
 
-## Setup
+### Tech Stack
+- **Language**: Rust (2024 Edition)
+- **Web Framework**: Actix-web 4.x
+- **GraphQL**: async-graphql 7.x
+- **Database**: PostgreSQL 16 with Diesel ORM
+- **Authentication**: JWT + Argon2 password hashing
+- **Containerization**: Docker with multi-stage builds
 
-- Clone the repository
-- Create `.env` file with the following environmental variables:
-  - DATABASE_URL=postgres://christopherallison:12345@localhost/classification_transformer?sslmode=disable
-  - SECRET_KEY=32CHARSECRETKEY
-  - PASSWORD_SECRET_KEY=32CHARSECRETKEY
-  - JWT_SECRET_KEY=32CHARSECRETKEY
-  - ADMIN_EMAIL=some_admin@email.com 
-  - ADMIN_PASSWORD=ADMINPASSWORD
-  - ADMIN_NAME="Admin Name"
-- Change APP_NAME const in lib.rs to your app
-- `diesel migration run`
-- `cargo run`
+## Quick Start
 
-## Dan's notes
+### Prerequisites
+- Docker and Docker Compose
+- (Optional) Rust toolchain for local development
+- (Optional) diesel-cli for migrations
 
-### Running on MacOS
+### Using Docker (Recommended)
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd security_converter
+```
+
+2. Create `.env` file:
+```bash
+DATABASE_URL=postgres://christopherallison:12345@localhost:5434/security_classification_converter?sslmode=disable
+SECRET_KEY=your_32_character_secret_key_here
+PASSWORD_SECRET_KEY=your_32_char_password_secret_key
+JWT_SECRET_KEY=your_32_character_jwt_secret_key
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=your_secure_admin_password
+ADMIN_NAME="Admin User"
+```
+
+3. Start the services:
+```bash
+docker compose up -d
+```
+
+4. Access the API:
+- **Home**: http://localhost:8080
+- **GraphQL Playground**: http://localhost:8080/playground
+- **GraphQL API**: http://localhost:8080/graphql (POST)
+
+### Local Development
+
+1. Install dependencies:
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Install diesel-cli
+cargo install diesel_cli --no-default-features --features postgres
+```
+
+2. Start PostgreSQL:
+```bash
+docker compose up -d db
+```
+
+3. Run migrations:
+```bash
+diesel migration run
+```
+
+4. Start the server:
+```bash
+cargo run
+```
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | API documentation home page |
+| `/playground` | GET | GraphiQL interactive playground |
+| `/graphql` | POST | GraphQL API endpoint |
+| `/graphql` | GET (WebSocket) | GraphQL subscriptions |
+
+## GraphQL Schema
+
+### Key Types
+- **Nation**: NATO member nations with their classification systems
+- **Authority**: Organizations authorized to perform classifications
+- **ClassificationSchema**: Classification levels (UNCLASSIFIED → TOP SECRET)
+- **DataObject**: Documents/data packages with classification metadata
+- **ConversionRequest**: Audit trail for classification conversions
+- **User**: System users with role-based access
+
+### Example Queries
+
+```graphql
+# Get all nations
+query {
+  allNations {
+    id
+    name
+    code
+  }
+}
+
+# Get classification schemas for a nation
+query {
+  classificationSchemasByNation(nationId: "uuid-here") {
+    level
+    description
+  }
+}
+
+# Create a conversion request
+mutation {
+  createConversionRequest(
+    sourceNationId: "uuid-source"
+    targetNationId: "uuid-target"
+    dataObjectId: "uuid-data"
+  ) {
+    id
+    status
+    createdAt
+  }
+}
+```
+
+## GCP Deployment
+
+This project includes scripts for deploying to Google Cloud Platform without a public IP (using IAP tunneling).
+
+### Deploy to GCP
 
 ```bash
-cargo install diesel_cli --no-default-features --features postgres # if not already installed
-
-# MacOS only clean up when done
-brew install libpq
-brew link --force libpq
-
-cargo clean
-
-docker compose down; sleep 2; docker compose up -d db; sleep 10; diesel migration run
-docker compose exec -it db psql -U christopherallison -W security_classification_converter
-docker compose logs -f
-
-time docker compose build people-data-api
-docker images | grep epi
-docker compose up
+cd gcp-deploy
+bash deploy.sh
 ```
 
-### WiP/TODO
+### Access via IAP Tunnel
 
-- [x] Working: Dockerfile.simple again: worked (arm64:4.25GB)
-- [x] Working: Dockerfile.slim finally working with base rust-image (arm64:1.98GB)
-- [x] Working: Dockerfile.slim try debian:buster (arm64:444MB)
-- [x] Working: Dockerfile.slim try debian:buster-slim : (arm64:392MB amd64:447MB )
-- [x] Try again on codespaces (amd64)
-  - [x] Rename Dockerfile.slim to Dockerfile.slim
-- [x] Docker as non root user (rusty)
+```bash
+# Start the tunnel
+gcloud compute start-iap-tunnel security-converter-vm 8080 \
+  --local-host-port=localhost:8080 \
+  --zone=northamerica-northeast1-a
 
-- [ ] Can I just copy src and Cargo.(toml|lock) into the image?
-  - [ ] If so, Fix Dockerfile.simple as well
-  - [ ] If so, remove the .dockerignore file
-- [ ] Accelerate build with rust crate cache?
-- [ ] Re-validate all dependencies in Dockerfile.slim
-- [ ] alpine base image (musl)
-  - [ ] [LogRocket Blog article](https://blog.logrocket.com/packaging-a-rust-web-service-using-docker/)
-    - [ ] [Associated Repo](https://github.com/zupzup/rust-docker-web/blob/main/debian/Dockerfile)
-  - [ ] Working: Dockerfile.alpine (arm64: 1.98GB)
-  - [ ] Working: Dockerfile.alpine (arm64: 1.98GB)
-- [x] http response type for index.html Content-Type: text/html; charset=UTF-8
-- [x] replace openssl with libssl-dev in Dockerfile.simple
-- [ ] Add e2e tests
-- [x] progress indication with logging function
-- [ ] Where shall we run diesel migrations?
-  - Can use docker-compose to wait for db startup, and run migrations to completion
-  - Create a diesel container, with migrations folders mounted, and run migrations
-  - https://stackoverflow.com/questions/35069027/docker-wait-for-postgresql-to-be-running
-  - https://docs.docker.com/compose/startup-order/
-
-### Container image sizes
-
-You can control the image you build by selecting the Dockerfile.XX in the docker-compose.yml file.
-| Image              | arm64  | amd64                    | description                                |
-|--------------------|--------|--------------------------|--------------------------------------------|
-| rust:1.68          | 4.25GB |                          | single stage (Dockerfile.simple)           |
-| rust:1.68          | 1.98GB |                          | multi-stage                                |
-| debian:buster      | 444MB  |                          | multi-stage                                |
-| debian:buster-slim | 392MB  | 447MB (15 minutes build) | multi-stage (Dockerfile.slim)              |
-| alpine:3.14        |        |                          | multi-stage musl based (Dockerfile.alpine) |
-
-### Caching the build
-
-To enable the caching of the compiling of the rust dependencies, you can modify the start of the Dockerfile.slim to add this:
-
-```dockerfile
-SNIPPET
+# Then open http://localhost:8080/playground
 ```
 
-*measured on M2 Mac Mini:*
+### SSH Access
 
-| Image             | first | subsequent with only code change | description  |
-|-------------------|-------|----------------------------------|--------------|
-| Dockerfile.simple | 238s  |                                  | single stage |
-| Dockerfile.slim   | 216s  |                                  | multi-stage  |
-| Dockerfile.fast   |       |                                  | multi-stage  |
+```bash
+gcloud compute ssh security-converter-vm \
+  --zone=northamerica-northeast1-a \
+  --tunnel-through-iap
+```
+
+See [gcp-deploy/README.md](gcp-deploy/README.md) for detailed deployment instructions.
+
+## Docker Configuration
+
+### Container Images
+
+| Dockerfile | Base Image | Size (approx) | Description |
+|------------|------------|---------------|-------------|
+| Dockerfile.slim | debian:bookworm-slim | ~450MB | Production (recommended) |
+| Dockerfile.simple | rust:latest | ~4GB | Development/debugging |
+
+### Building Manually
+
+```bash
+# Build the API image
+docker compose build people-data-api
+
+# View logs
+docker compose logs -f people-data-api
+```
+
+## Project Structure
+
+```
+security_converter/
+├── graphql_api/           # Main API crate
+│   ├── src/
+│   │   ├── models/        # Database models
+│   │   ├── graphql/       # GraphQL schema, queries, mutations
+│   │   ├── handlers/      # HTTP route handlers
+│   │   └── database.rs    # Database connection pool
+│   └── static/            # Static files (JS, CSS)
+├── errors/                # Shared error handling crate
+├── migrations/            # Diesel database migrations
+├── templates/             # HTML templates (Tera)
+├── gcp-deploy/            # GCP deployment scripts
+├── kubernetes/            # Kubernetes manifests
+└── docker-compose.yml     # Local development setup
+```
+
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
+| `SECRET_KEY` | Application secret (32 chars) | Yes |
+| `PASSWORD_SECRET_KEY` | Password hashing secret (32 chars) | Yes |
+| `JWT_SECRET_KEY` | JWT signing secret (32 chars) | Yes |
+| `ADMIN_EMAIL` | Initial admin email | Yes |
+| `ADMIN_PASSWORD` | Initial admin password | Yes |
+| `ADMIN_NAME` | Initial admin display name | Yes |
+| `HOST` | Server bind address | No (default: 0.0.0.0) |
+| `PORT` | Server port | No (default: 8080) |
+
+## Database Schema
+
+The application uses Diesel ORM with PostgreSQL. Migrations are embedded in the binary and run automatically on startup.
+
+Key tables:
+- `users` - User accounts and authentication
+- `nations` - NATO member nations
+- `authorities` - Classification authorities
+- `classification_schemas` - Classification levels per nation
+- `data_objects` - Tagged documents/data
+- `conversion_requests` - Conversion audit trail
+- `metadata` - Additional data object metadata
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `cargo test`
+5. Submit a pull request
+
+## License
+
+[Add your license here]
+
+## Acknowledgments
+
+- Built with [async-graphql](https://github.com/async-graphql/async-graphql)
+- Web framework: [Actix-web](https://actix.rs/)
+- ORM: [Diesel](https://diesel.rs/)
