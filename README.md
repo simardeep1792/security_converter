@@ -159,21 +159,50 @@ mutation {
 }
 ```
 
-## GCP Deployment
+## Production Deployment (GCP)
 
-This project includes scripts for deploying to Google Cloud Platform without a public IP (using IAP tunneling).
+The production environment runs on GCP with images stored in Google Artifact Registry for fast deployments.
 
-### Deploy to GCP
+### Quick Deploy (Recommended)
+
+After making changes, deploy to production with:
 
 ```bash
-cd gcp-deploy
-bash deploy.sh
+./deploy.sh
 ```
 
-### Access via IAP Tunnel
+This script:
+1. Builds Docker image locally (uses cache for fast rebuilds)
+2. Pushes to Google Artifact Registry
+3. Pulls and restarts on the VM
+
+| Step | First Time | Subsequent |
+|------|------------|------------|
+| Build | ~15-20 min | ~30 sec |
+| Push | ~30 sec | ~10 sec |
+| VM Deploy | ~15 sec | ~15 sec |
+
+### Manual Deployment
 
 ```bash
-# Start the tunnel
+# 1. Build locally
+docker build -t northamerica-northeast1-docker.pkg.dev/sandbox-caf-compute-hub/security-converter/api:latest -f Dockerfile.slim .
+
+# 2. Push to registry
+docker push northamerica-northeast1-docker.pkg.dev/sandbox-caf-compute-hub/security-converter/api:latest
+
+# 3. Deploy on VM
+gcloud compute ssh security-converter-vm --zone=northamerica-northeast1-a --tunnel-through-iap --command="
+  cd /opt/security-converter && \
+  sudo docker compose pull people-data-api && \
+  sudo docker compose up -d people-data-api
+"
+```
+
+### Access Production
+
+```bash
+# Start IAP tunnel (keep running in terminal)
 gcloud compute start-iap-tunnel security-converter-vm 8080 \
   --local-host-port=localhost:8080 \
   --zone=northamerica-northeast1-a
@@ -189,7 +218,23 @@ gcloud compute ssh security-converter-vm \
   --tunnel-through-iap
 ```
 
-See [gcp-deploy/README.md](gcp-deploy/README.md) for detailed deployment instructions.
+### View Logs
+
+```bash
+gcloud compute ssh security-converter-vm --zone=northamerica-northeast1-a --tunnel-through-iap --command="sudo docker compose -f /opt/security-converter/docker-compose.yml logs -f people-data-api"
+```
+
+### Infrastructure Details
+
+| Resource | Value |
+|----------|-------|
+| Project | `sandbox-caf-compute-hub` |
+| VM | `security-converter-vm` |
+| Zone | `northamerica-northeast1-a` |
+| Registry | `northamerica-northeast1-docker.pkg.dev/sandbox-caf-compute-hub/security-converter/api` |
+| Access | IAP tunneling (no public IP) |
+
+See [gcp-deploy/README.md](gcp-deploy/README.md) for initial setup instructions.
 
 ## Docker Configuration
 
