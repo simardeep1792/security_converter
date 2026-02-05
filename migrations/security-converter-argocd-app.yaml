@@ -22,9 +22,8 @@ spec:
   project: aurora-app  # Uses the aurora-app AppProject
 
   source:
-    # UPDATE THIS: Replace with actual Git repository URL
-    repoURL: https://github.com/YOUR_ORG/security-converter
-    targetRevision: main  # Or use specific tag/branch for production
+    repoURL: https://github.com/simardeep1792/security_converter
+    targetRevision: rr_jfc_hub  # Using feature branch
     path: kubernetes  # Path where manifests are located in the repo
 
   destination:
