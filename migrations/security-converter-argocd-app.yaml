@@ -1,0 +1,58 @@
+# ArgoCD Application for Security Converter
+# This file can be applied once the security-converter team has created their Kubernetes manifests
+#
+# Prerequisites:
+# 1. Security converter team creates kubernetes/ directory in their repo with manifests
+# 2. Update the repoURL below with their actual Git repository
+# 3. Update secrets in their repository (don't commit real secrets!)
+#
+# To deploy:
+# kubectl apply -f security-converter-argocd-app.yaml
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: security-converter
+  namespace: aurora-platform  # ArgoCD manages apps from aurora-platform namespace
+  labels:
+    app: security-converter
+    tier: application
+spec:
+  project: aurora-app  # Uses the aurora-app AppProject
+
+  source:
+    # UPDATE THIS: Replace with actual Git repository URL
+    repoURL: https://github.com/YOUR_ORG/security-converter
+    targetRevision: main  # Or use specific tag/branch for production
+    path: kubernetes  # Path where manifests are located in the repo
+
+  destination:
+    server: https://kubernetes.default.svc  # Deploy to the same cluster
+    namespace: security-converter  # Application namespace
+
+  syncPolicy:
+    automated:
+      prune: true  # Remove resources when deleted from Git
+      selfHeal: true  # Auto-sync if manual changes are detected
+      allowEmpty: false  # Don't sync if path is empty
+    syncOptions:
+      - CreateNamespace=true  # Auto-create namespace if it doesn't exist
+      - PrunePropagationPolicy=foreground  # Delete dependents before owner
+      - PruneLast=true  # Prune after new resources are created
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Ignore differences in certain fields to prevent constant out-of-sync status
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas  # Ignore if HPA is modifying replicas
+
+  # Health check configuration
+  revisionHistoryLimit: 10

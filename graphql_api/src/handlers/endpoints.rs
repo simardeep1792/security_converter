@@ -47,3 +47,9 @@ pub async fn graphql_ws(
 ) -> Result<HttpResponse> {
     GraphQLSubscription::new(Schema::clone(&*schema)).start(&req, payload)
 }
+
+pub async fn health_handler() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("application/json")
+        .body(r#"{"status":"ok"}"#)
+}

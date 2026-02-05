@@ -1,0 +1,101 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: security-converter-api
+  namespace: security-converter
+spec:
+  selector:
+    app: security-converter
+    component: api
+  ports:
+    - port: 80
+      targetPort: 8080
+      name: http
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: security-converter-api
+  namespace: security-converter
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: security-converter
+      component: api
+  template:
+    metadata:
+      labels:
+        app: security-converter
+        component: api
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: api
+        image: northamerica-northeast1-docker.pkg.dev/sandbox-caf-compute-hub/security-converter/api:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "8080"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: security-converter-secrets
+              key: DATABASE_URL
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: security-converter-secrets
+              key: SECRET_KEY
+        - name: PASSWORD_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: security-converter-secrets
+              key: PASSWORD_SECRET_KEY
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: security-converter-secrets
+              key: JWT_SECRET_KEY
+        - name: ADMIN_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: security-converter-secrets
+              key: ADMIN_EMAIL
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: security-converter-secrets
+              key: ADMIN_PASSWORD
+        - name: ADMIN_NAME
+          valueFrom:
+            secretKeyRef:
+              name: security-converter-secrets
+              key: ADMIN_NAME
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
